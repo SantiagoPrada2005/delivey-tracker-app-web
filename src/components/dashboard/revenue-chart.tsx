@@ -38,7 +38,7 @@ export function RevenueChart() {
             <Line 
               type="monotone" 
               dataKey="ingresos" 
-              stroke="#8884d8" 
+              stroke="#8b5cf6" 
               activeDot={{ r: 8 }} 
               strokeWidth={2}
               name="Ingresos ($)"

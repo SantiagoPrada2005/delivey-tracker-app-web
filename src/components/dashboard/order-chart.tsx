@@ -35,9 +35,9 @@ export function OrderChart() {
             <YAxis />
             <Tooltip />
             <Legend />
-            <Bar dataKey="completados" fill="#22c55e" name="Completados" />
-            <Bar dataKey="pendientes" fill="#f59e0b" name="Pendientes" />
-            <Bar dataKey="cancelados" fill="#ef4444" name="Cancelados" />
+            <Bar dataKey="completados" fill="#4ade80" name="Completados" />
+            <Bar dataKey="pendientes" fill="#fbbf24" name="Pendientes" />
+            <Bar dataKey="cancelados" fill="#f87171" name="Cancelados" />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

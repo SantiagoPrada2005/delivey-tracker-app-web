@@ -4,10 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 const data = [
-  { name: 'Entregados', value: 65, color: '#22c55e' },
-  { name: 'En camino', value: 15, color: '#3b82f6' },
-  { name: 'Pendientes', value: 28, color: '#f59e0b' },
-  { name: 'Cancelados', value: 12, color: '#ef4444' },
+  { name: 'Entregados', value: 65, color: '#4ade80' },
+  { name: 'En camino', value: 15, color: '#60a5fa' },
+  { name: 'Pendientes', value: 28, color: '#fbbf24' },
+  { name: 'Cancelados', value: 12, color: '#f87171' },
 ];
 
 export function StatusChart() {
