@@ -106,7 +106,7 @@ const data: Product[] = [
 ];
 
 // Definición de columnas
-export const columns: ColumnDef<Product>[] = [
+const columns: ColumnDef<Product>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => {
