@@ -1,0 +1,19 @@
+import { mysqlTable, serial, varchar, text, timestamp } from 'drizzle-orm/mysql-core';
+import { relations } from 'drizzle-orm';
+import { pedidos } from './pedidos';
+
+// Tabla de clientes
+export const clientes = mysqlTable('clientes', {
+  id: serial('id').primaryKey(),
+  nombre: varchar('nombre', { length: 100 }).notNull(),
+  apellido: varchar('apellido', { length: 100 }).notNull(),
+  telefono: varchar('telefono', { length: 20 }).notNull(),
+  email: varchar('email', { length: 100 }).notNull(),
+  direccion: text('direccion').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Definir relaciones
+export const clientesRelations = relations(clientes, ({ many }) => ({
+  pedidos: many(pedidos),
+}));
