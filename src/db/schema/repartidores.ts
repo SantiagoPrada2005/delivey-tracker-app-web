@@ -11,7 +11,7 @@ export const repartidores = mysqlTable('repartidores', {
   telefono: varchar('telefono', { length: 20 }).notNull(),
   email: varchar('email', { length: 100 }),
   disponible: boolean('disponible').default(true),
-  organizationId: int('organization_id').references(() => organizations.id),
+  organizationId: int('organization_id', { unsigned: true }).references(() => organizations.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

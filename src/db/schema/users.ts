@@ -44,7 +44,7 @@ export const users = mysqlTable('users', {
   // --- Campos específicos de tu aplicación ---
   role: mysqlEnum('role', ['admin', 'service_client', 'delivery', 'N/A']).default('N/A').notNull(), //'admin', 'medico', 'asistente', 'N/A'
   isActive: boolean('is_active').default(true).notNull(),
-  organizationId: int('organization_id').references(()=> organizations.id, {onDelete: "cascade", onUpdate: "cascade"}),
+  organizationId: int('organization_id', { unsigned: true }).references(()=> organizations.id, {onDelete: "cascade", onUpdate: "cascade"}),
   lastLoginAt: timestamp('last_login_at'),
 
   // --- Timestamps ---

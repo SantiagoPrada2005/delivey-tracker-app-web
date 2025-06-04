@@ -12,7 +12,7 @@ export const productos = mysqlTable('productos', {
   stock: int('stock').notNull().default(0),
   categoria: varchar('categoria', { length: 50 }),
   imagen: varchar('imagen', { length: 255 }),
-  organizationId: int('organization_id').references(() => organizations.id),
+  organizationId: int('organization_id', { unsigned: true }).references(() => organizations.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

@@ -13,7 +13,7 @@ export const pedidos = mysqlTable('pedidos', {
   total: decimal('total', { precision: 10, scale: 2 }).notNull(),
   direccionEntrega: text('direccion_entrega').notNull(),
   fechaEntrega: timestamp('fecha_entrega'),
-  organizationId: int('organization_id').references(() => organizations.id),
+  organizationId: int('organization_id', { unsigned: true }).references(() => organizations.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

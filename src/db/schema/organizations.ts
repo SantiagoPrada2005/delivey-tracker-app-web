@@ -1,6 +1,6 @@
 // @app/db/shema/organizations.ts
 
-import { int, mysqlTable, serial, varchar, mysqlEnum } from "drizzle-orm/mysql-core";
+import { int, mysqlTable, varchar, mysqlEnum } from "drizzle-orm/mysql-core";
 
 /**
  * @Typedef - Schema de la tabla de las organizaciones para logica
@@ -8,7 +8,8 @@ import { int, mysqlTable, serial, varchar, mysqlEnum } from "drizzle-orm/mysql-c
  * @Author - Santiago Prada - Product Owner
  */
 export const organizations = mysqlTable("organizations",{
-    id : serial("id").primaryKey(),
+    id : int("id", { unsigned: true }).autoincrement().primaryKey(),
+    name : varchar("name", {length : 100}),
     nit : int("nit", {unsigned : true}),
     phoneService : varchar("phone_service", {length : 20}),
     address : varchar("address", {length : 200}),
