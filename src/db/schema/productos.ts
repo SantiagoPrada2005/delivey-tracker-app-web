@@ -1,6 +1,7 @@
 import { mysqlTable, serial, varchar, text, int, decimal, timestamp } from 'drizzle-orm/mysql-core';
 import { relations } from 'drizzle-orm';
 import { detallesPedido } from './detallesPedido';
+import { organizations } from './organizations';
 
 // Tabla de productos
 export const productos = mysqlTable('productos', {
@@ -11,6 +12,7 @@ export const productos = mysqlTable('productos', {
   stock: int('stock').notNull().default(0),
   categoria: varchar('categoria', { length: 50 }),
   imagen: varchar('imagen', { length: 255 }),
+  organizationId: int('organization_id').references(() => organizations.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

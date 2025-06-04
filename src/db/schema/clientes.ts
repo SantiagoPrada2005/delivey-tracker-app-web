@@ -1,6 +1,7 @@
-import { mysqlTable, serial, varchar, text, timestamp } from 'drizzle-orm/mysql-core';
+import { mysqlTable, serial, varchar, text, timestamp, int } from 'drizzle-orm/mysql-core';
 import { relations } from 'drizzle-orm';
 import { pedidos } from './pedidos';
+import { organizations } from './organizations';
 
 // Tabla de clientes
 export const clientes = mysqlTable('clientes', {
@@ -10,6 +11,7 @@ export const clientes = mysqlTable('clientes', {
   telefono: varchar('telefono', { length: 20 }).notNull(),
   email: varchar('email', { length: 100 }).notNull(),
   direccion: text('direccion').notNull(),
+  organizationId: int('organization_id').references(() => organizations.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

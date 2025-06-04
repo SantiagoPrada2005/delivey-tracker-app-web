@@ -3,6 +3,7 @@ import { relations } from 'drizzle-orm';
 import { clientes } from './clientes';
 import { detallesPedido } from './detallesPedido';
 import { asignacionesPedido } from './asignacionesPedido';
+import { organizations } from './organizations';
 
 // Tabla de pedidos
 export const pedidos = mysqlTable('pedidos', {
@@ -12,6 +13,7 @@ export const pedidos = mysqlTable('pedidos', {
   total: decimal('total', { precision: 10, scale: 2 }).notNull(),
   direccionEntrega: text('direccion_entrega').notNull(),
   fechaEntrega: timestamp('fecha_entrega'),
+  organizationId: int('organization_id').references(() => organizations.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

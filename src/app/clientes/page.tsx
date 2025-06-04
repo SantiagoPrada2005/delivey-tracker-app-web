@@ -18,7 +18,6 @@ import {
   ChevronDown,
   MoreHorizontal,
   Plus,
-  Search,
   Users,
   UserCheck,
   UserX,
@@ -50,6 +49,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 // Importar los componentes del sidebar
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import { MobileSidebar } from "@/components/mobile-sidebar"
+import { OrganizationSelector } from "@/components/organization-selector"
+import { useOrganization } from "@/hooks/useOrganization"
 
 // Definir el tipo de datos para clientes
 export type Cliente = {
@@ -63,10 +64,11 @@ export type Cliente = {
   totalPedidos: number
   valorTotal: number
   ciudad: string
+  organizationId: number
 }
 
-// Datos de ejemplo
-const data: Cliente[] = [
+// Datos de ejemplo con organizationId
+const allData: Cliente[] = [
   {
     id: "CLI001",
     nombre: "Ana García",
@@ -77,7 +79,8 @@ const data: Cliente[] = [
     fechaRegistro: "2024-01-15",
     totalPedidos: 12,
     valorTotal: 2450000,
-    ciudad: "Bogotá"
+    ciudad: "Bogotá",
+    organizationId: 1
   },
   {
     id: "CLI002",
@@ -89,7 +92,8 @@ const data: Cliente[] = [
     fechaRegistro: "2024-02-20",
     totalPedidos: 8,
     valorTotal: 1890000,
-    ciudad: "Medellín"
+    ciudad: "Medellín",
+    organizationId: 1
   },
   {
     id: "CLI003",
@@ -101,7 +105,8 @@ const data: Cliente[] = [
     fechaRegistro: "2024-03-10",
     totalPedidos: 3,
     valorTotal: 650000,
-    ciudad: "Cali"
+    ciudad: "Cali",
+    organizationId: 2
   },
   {
     id: "CLI004",
@@ -113,7 +118,8 @@ const data: Cliente[] = [
     fechaRegistro: "2023-11-05",
     totalPedidos: 25,
     valorTotal: 4200000,
-    ciudad: "Barranquilla"
+    ciudad: "Barranquilla",
+    organizationId: 2
   },
   {
     id: "CLI005",
@@ -125,7 +131,8 @@ const data: Cliente[] = [
     fechaRegistro: "2024-01-30",
     totalPedidos: 5,
     valorTotal: 980000,
-    ciudad: "Bucaramanga"
+    ciudad: "Bucaramanga",
+    organizationId: 1
   },
   {
     id: "CLI006",
@@ -137,7 +144,8 @@ const data: Cliente[] = [
     fechaRegistro: "2023-12-12",
     totalPedidos: 18,
     valorTotal: 3100000,
-    ciudad: "Cartagena"
+    ciudad: "Cartagena",
+    organizationId: 2
   }
 ]
 
@@ -276,14 +284,10 @@ const columns: ColumnDef<Cliente>[] = [
   },
 ]
 
-// Componente de tabla de datos
-function DataTable<TData, TValue>({
-  columns,
-  data,
-}: {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
-}) {
+
+
+// Componente principal de la página
+export default function ClientesPage() {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -292,6 +296,17 @@ function DataTable<TData, TValue>({
     React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
 
+  
+  // Usar el hook de organización para filtrar clientes
+  const { selectedOrganizationId } = useOrganization()
+  
+  // Filtrar datos por organizationId
+  const data = React.useMemo(() => {
+    if (!selectedOrganizationId) return allData
+    return allData.filter(cliente => cliente.organizationId === selectedOrganizationId)
+  }, [selectedOrganizationId])
+  
+  // Configurar tabla
   const table = useReactTable({
     data,
     columns,
@@ -310,134 +325,7 @@ function DataTable<TData, TValue>({
       rowSelection,
     },
   })
-
-  return (
-    <div className="w-full">
-      <div className="flex items-center py-4">
-        <div className="flex items-center space-x-2">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nombre o email..."
-            value={(table.getColumn("nombre")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("nombre")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-          />
-        </div>
-        <div className="ml-auto flex items-center space-x-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columnas <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  )
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Cliente
-          </Button>
-        </div>
-      </div>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  )
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No se encontraron resultados.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} de{" "}
-          {table.getFilteredRowModel().rows.length} fila(s) seleccionadas.
-        </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Anterior
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Siguiente
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Componente principal de la página
-export default function ClientesPage() {
+  
   // Calcular métricas
   const totalClientes = data.length
   const clientesActivos = data.filter(cliente => cliente.estado === "activo").length
@@ -465,7 +353,18 @@ export default function ClientesPage() {
         {/* Contenido de la página */}
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
           <div className="flex items-center justify-between space-y-2">
-            <h2 className="text-3xl font-bold tracking-tight">Clientes</h2>
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Clientes</h2>
+              <p className="text-muted-foreground">
+                Gestiona la información de tus clientes
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <OrganizationSelector />
+              <Button>
+                <Plus className="mr-2 h-4 w-4" /> Agregar Cliente
+              </Button>
+            </div>
           </div>
           
           {/* Tarjetas de métricas */}
@@ -546,7 +445,116 @@ export default function ClientesPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <DataTable columns={columns} data={data} />
+              <div className="flex items-center py-4">
+                <Input
+                  placeholder="Filtrar clientes..."
+                  value={(table.getColumn("nombre")?.getFilterValue() as string) ?? ""}
+                  onChange={(event) =>
+                    table.getColumn("nombre")?.setFilterValue(event.target.value)
+                  }
+                  className="max-w-sm"
+                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="ml-auto">
+                      Columnas <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {table
+                      .getAllColumns()
+                      .filter((column) => column.getCanHide())
+                      .map((column) => {
+                        return (
+                          <DropdownMenuCheckboxItem
+                            key={column.id}
+                            className="capitalize"
+                            checked={column.getIsVisible()}
+                            onCheckedChange={(value) =>
+                              column.toggleVisibility(!!value)
+                            }
+                          >
+                            {column.id}
+                          </DropdownMenuCheckboxItem>
+                        )
+                      })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => {
+                          return (
+                            <TableHead key={header.id}>
+                              {header.isPlaceholder
+                                ? null
+                                : flexRender(
+                                    header.column.columnDef.header,
+                                    header.getContext()
+                                  )}
+                            </TableHead>
+                          )
+                        })}
+                      </TableRow>
+                    ))}
+                  </TableHeader>
+                  <TableBody>
+                    {table.getRowModel().rows?.length ? (
+                      table.getRowModel().rows.map((row) => (
+                        <TableRow
+                          key={row.id}
+                          data-state={row.getIsSelected() && "selected"}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id}>
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext()
+                              )}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={columns.length}
+                          className="h-24 text-center"
+                        >
+                          No hay resultados.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="flex items-center justify-end space-x-2 py-4">
+                <div className="flex-1 text-sm text-muted-foreground">
+                  {table.getFilteredSelectedRowModel().rows.length} de{" "}
+                  {table.getFilteredRowModel().rows.length} fila(s) seleccionada(s).
+                </div>
+                <div className="space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage()}
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.nextPage()}
+                    disabled={!table.getCanNextPage()}
+                  >
+                    Siguiente
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
