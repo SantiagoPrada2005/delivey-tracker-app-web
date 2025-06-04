@@ -1,8 +1,9 @@
 "use client";
 
-import { Button } from "@components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@components/ui/sheet";
-import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Menu, Settings } from "lucide-react";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 
 export function MobileSidebar() {
   return (
@@ -14,8 +15,9 @@ export function MobileSidebar() {
       </SheetTrigger>
       <SheetContent side="left" className="w-72">
         <div className="flex h-full flex-col gap-4">
-          <div className="flex h-14 items-center border-b px-4 font-semibold">
+          <div className="flex h-14 items-center justify-between border-b px-4 font-semibold">
             <h1 className="text-xl">Administrador de Pedidos</h1>
+            <ThemeSwitcher />
           </div>
           <div className="flex-1 px-4">
             <nav className="flex flex-col gap-2">
@@ -33,6 +35,10 @@ export function MobileSidebar() {
               </a>
               <a href="#" className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-accent hover:text-accent-foreground">
                 Repartidores
+              </a>
+              <a href="#" className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-accent hover:text-accent-foreground">
+                <Settings className="h-4 w-4 mr-2" />
+                Configuración
               </a>
             </nav>
           </div>
