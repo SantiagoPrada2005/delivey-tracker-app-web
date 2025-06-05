@@ -12,7 +12,9 @@ import {
   updateEmail,
   updatePassword,
   EmailAuthProvider,
-  reauthenticateWithCredential
+  reauthenticateWithCredential,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
 
@@ -22,6 +24,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   signIn: (email: string, password: string) => Promise<User>;
+  signInWithGoogle: () => Promise<User>;
   signUp: (email: string, password: string, displayName?: string) => Promise<User>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -74,6 +77,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error al iniciar sesión:', error);
       setError(error instanceof Error ? error.message : 'Error al iniciar sesión');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Función para iniciar sesión con Google
+  const signInWithGoogle = async (): Promise<User> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const provider = new GoogleAuthProvider();
+      // Opcional: agregar scopes adicionales
+      provider.addScope('profile');
+      provider.addScope('email');
+      
+      const userCredential = await signInWithPopup(auth, provider);
+      return userCredential.user;
+    } catch (error) {
+      console.error('Error al iniciar sesión con Google:', error);
+      setError(error instanceof Error ? error.message : 'Error al iniciar sesión con Google');
       throw error;
     } finally {
       setLoading(false);
@@ -211,6 +235,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     error,
     signIn,
+    signInWithGoogle,
     signUp,
     signOut,
     resetPassword,
