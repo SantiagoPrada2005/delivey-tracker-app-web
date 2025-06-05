@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getOrganizations } from '@/lib/database';
+import { getAllOrganizations } from '@/lib/database';
 
 export async function GET() {
   try {
-    const organizations = await getOrganizations();
+    const organizations = await getAllOrganizations();
     return NextResponse.json(organizations);
   } catch (error) {
     console.error('Error fetching organizations:', error);
