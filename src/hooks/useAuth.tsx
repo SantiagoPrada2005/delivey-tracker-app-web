@@ -52,10 +52,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Función para manejar el token de Firebase
+  const handleFirebaseToken = async (user: User | null) => {
+    if (user) {
+      try {
+        // Obtener el token ID del usuario
+        const idToken = await user.getIdToken();
+        
+        // Guardar el token en una cookie
+        document.cookie = `firebaseToken=${idToken}; path=/; max-age=3600; secure; samesite=strict`;
+        
+        console.log('[Auth] Token de Firebase guardado en cookie');
+      } catch (error) {
+        console.error('[Auth] Error al obtener token de Firebase:', error);
+      }
+    } else {
+      // Eliminar el token de la cookie cuando el usuario cierre sesión
+      document.cookie = 'firebaseToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      console.log('[Auth] Token de Firebase eliminado de cookie');
+    }
+  };
+
   // Efecto para escuchar cambios en el estado de autenticación
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+      await handleFirebaseToken(user);
       setLoading(false);
     }, (error) => {
       console.error('Error en onAuthStateChanged:', error);
@@ -73,6 +95,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setError(null);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // El token se manejará automáticamente en onAuthStateChanged
       return userCredential.user;
     } catch (error) {
       console.error('Error al iniciar sesión:', error);
@@ -94,6 +118,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider.addScope('email');
       
       const userCredential = await signInWithPopup(auth, provider);
+      
+      // El token se manejará automáticamente en onAuthStateChanged
       return userCredential.user;
     } catch (error) {
       console.error('Error al iniciar sesión con Google:', error);
@@ -116,6 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await updateProfile(userCredential.user, { displayName });
       }
       
+      // El token se manejará automáticamente en onAuthStateChanged
       return userCredential.user;
     } catch (error) {
       console.error('Error al registrar usuario:', error);
@@ -131,6 +158,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       setError(null);
+      
+      // Firebase signOut automáticamente disparará onAuthStateChanged con user = null
+      // lo que eliminará el token de la cookie
       await firebaseSignOut(auth);
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
