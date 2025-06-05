@@ -1,0 +1,45 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { LoginForm } from '@/components/auth/login-form';
+import { useAuth } from '@/hooks/useAuth';
+
+export default function LoginPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  // Redireccionar si el usuario ya está autenticado
+  useEffect(() => {
+    if (user && !loading) {
+      router.push('/');
+    }
+  }, [user, loading, router]);
+
+  // Si está cargando, mostrar un estado de carga
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-pulse text-center">
+          <div className="h-12 w-12 mx-auto rounded-full bg-gray-200 dark:bg-gray-700"></div>
+          <p className="mt-4 text-gray-500 dark:text-gray-400">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no está autenticado, mostrar el formulario de inicio de sesión
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold">Administrador de Pedidos</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">
+            Inicia sesión para gestionar tus pedidos
+          </p>
+        </div>
+        <LoginForm />
+      </div>
+    </div>
+  );
+}

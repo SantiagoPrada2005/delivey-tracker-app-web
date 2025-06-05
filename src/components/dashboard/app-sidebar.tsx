@@ -15,6 +15,7 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { UserAuthNav } from "@/components/auth/user-auth-nav";
 
 // Definir los elementos del menú principal
 const mainMenuItems = [
@@ -42,6 +43,11 @@ export function AppSidebar() {
           <div className="flex h-14 items-center justify-between border-b px-4 font-semibold">
             <h1 className="text-xl">Administrador de Pedidos</h1>
             <ThemeSwitcher />
+          </div>
+          
+          {/* Perfil de usuario */}
+          <div className="p-4 border-b">
+            <UserAuthNav />
           </div>
           
           {/* Menú principal */}
