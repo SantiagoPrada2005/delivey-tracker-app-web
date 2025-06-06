@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { OrganizationProvider } from "@/hooks/useOrganization";
 import { AuthProvider } from "@/hooks/useAuth";
+import { OrganizationCheck } from "@/components/auth/organization-check";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,7 +39,9 @@ export default function RootLayout({
         >
           <AuthProvider>
             <OrganizationProvider>
-              {children}
+              <OrganizationCheck>
+                {children}
+              </OrganizationCheck>
             </OrganizationProvider>
           </AuthProvider>
         </ThemeProvider>

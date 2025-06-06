@@ -24,6 +24,7 @@ export async function seed() {
     console.log('📊 Creando organizaciones...');
     const org1 = await createOrganization({
       name: 'Restaurante El Buen Sabor',
+      slug: 'restaurante-el-buen-sabor',
       nit: 900123456,
       phoneService: '+57 301 234 5678',
       address: 'Calle 123 #45-67, Bogotá',
@@ -32,6 +33,7 @@ export async function seed() {
 
     const org2 = await createOrganization({
       name: 'Pizzería Don Luigi',
+      slug: 'pizzeria-don-luigi',
       nit: 900654321,
       phoneService: '+57 302 987 6543',
       address: 'Carrera 78 #12-34, Medellín',

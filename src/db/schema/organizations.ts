@@ -14,6 +14,7 @@ import { organizationRequests } from './organizationRequests';
 export const organizations = mysqlTable("organizations",{
     id : int("id", { unsigned: true }).autoincrement().primaryKey(),
     name : varchar("name", {length : 100}).notNull(),
+    slug : varchar("slug", {length : 100}).notNull().unique(),
     nit : int("nit", {unsigned : true}).unique(),
     phoneService : varchar("phone_service", {length : 20}),
     address : varchar("address", {length : 200}),

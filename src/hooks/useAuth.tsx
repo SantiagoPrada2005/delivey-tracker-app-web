@@ -52,6 +52,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Función para sincronizar usuario con la base de datos
+  const syncUserWithDatabase = async (firebaseUser: User): Promise<void> => {
+    try {
+      const idToken = await firebaseUser.getIdToken();
+      
+      const syncData = {
+        firebaseUid: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        displayName: firebaseUser.displayName || undefined,
+        emailVerified: firebaseUser.emailVerified,
+        photoURL: firebaseUser.photoURL || undefined,
+        providerId: firebaseUser.providerData[0]?.providerId || undefined
+      };
+
+      const response = await fetch('/api/auth/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify(syncData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('[Auth Sync] Error al sincronizar usuario:', errorData);
+        throw new Error(errorData.error || 'Error al sincronizar usuario');
+      }
+
+      const result = await response.json();
+      console.log('[Auth Sync] Usuario sincronizado exitosamente:', result.user?.email);
+      
+    } catch (error) {
+      console.error('[Auth Sync] Error en sincronización:', error);
+      // No lanzamos el error para no interrumpir el flujo de autenticación
+    }
+  };
+
   // Efecto para manejar cambios en el estado de autenticación
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -69,6 +107,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             : `firebaseToken=${idToken}; path=/; max-age=3600; samesite=lax`;
           
           document.cookie = cookieOptions;
+          
+          // Sincronizar usuario con la base de datos
+          await syncUserWithDatabase(firebaseUser);
           
           setUser(firebaseUser);
         } catch (error) {
@@ -102,6 +143,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         : `firebaseToken=${idToken}; path=/; max-age=3600; samesite=lax`;
       
       document.cookie = cookieOptions;
+      
+      // Sincronizar usuario con la base de datos
+      await syncUserWithDatabase(userCredential.user);
       
       // Pequeña pausa para asegurar que la cookie se establezca
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -137,6 +181,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       document.cookie = cookieOptions;
       
+      // Sincronizar usuario con la base de datos
+      await syncUserWithDatabase(userCredential.user);
+      
       // Pequeña pausa para asegurar que la cookie se establezca
       await new Promise(resolve => setTimeout(resolve, 100));
       
@@ -170,6 +217,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         : `firebaseToken=${idToken}; path=/; max-age=3600; samesite=lax`;
       
       document.cookie = cookieOptions;
+      
+      // Sincronizar usuario con la base de datos
+      await syncUserWithDatabase(userCredential.user);
       
       // Pequeña pausa para asegurar que la cookie se establezca
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -230,6 +280,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       await updateProfile(user, { displayName, photoURL });
+      
+      // Sincronizar cambios con la base de datos
+      await syncUserWithDatabase(user);
     } catch (error) {
       console.error('Error al actualizar perfil:', error);
       setError(error instanceof Error ? error.message : 'Error al actualizar perfil');
@@ -255,6 +308,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Actualizar el email
       await updateEmail(user, email);
+      
+      // Sincronizar cambios con la base de datos
+      await syncUserWithDatabase(user);
     } catch (error) {
       console.error('Error al actualizar email:', error);
       setError(error instanceof Error ? error.message : 'Error al actualizar email');
@@ -307,6 +363,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updateUserPassword,
     clearError,
   };
+  
+  // Efecto para verificar el estado de organización cuando el usuario está autenticado
+  useEffect(() => {
+    const checkOrganizationStatus = async () => {
+      if (user && !loading) {
+        try {
+          const idToken = await user.getIdToken();
+          const response = await fetch('/api/user/organization-status', {
+            headers: {
+              'Authorization': `Bearer ${idToken}`
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('[Organization Status]', data.status);
+            
+            // Aquí se podría implementar lógica adicional basada en el estado
+            // Por ejemplo, redireccionar a una página de creación de organización
+            // si el usuario no tiene una organización asignada
+          }
+        } catch (error) {
+          console.error('[Organization Status] Error:', error);
+        }
+      }
+    };
+    
+    checkOrganizationStatus();
+  }, [user, loading]);
 
   return (
     <AuthContext.Provider value={value}>
