@@ -148,9 +148,9 @@ export async function getAllOrganizations() {
   return await db.select().from(organizations);
 }
 
-export async function createOrganization(data: Partial<typeof organizations.$inferInsert>) {
-  const result = await db.insert(organizations).values(data).$returningId();
-  return result[0];
+export async function createOrganization(data: typeof organizations.$inferInsert) {
+  const [result] = await db.insert(organizations).values(data).$returningId();
+  return result;
 }
 
 export async function updateOrganization(id: number, data: Partial<typeof organizations.$inferInsert>) {

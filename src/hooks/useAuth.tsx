@@ -52,40 +52,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Función para manejar el token de Firebase
-  const handleFirebaseToken = async (user: User | null) => {
-    if (user) {
-      try {
-        // Obtener el token ID del usuario
-        const idToken = await user.getIdToken();
-        
-        // Guardar el token en una cookie
-        document.cookie = `firebaseToken=${idToken}; path=/; max-age=3600; secure; samesite=strict`;
-        
-        console.log('[Auth] Token de Firebase guardado en cookie');
-      } catch (error) {
-        console.error('[Auth] Error al obtener token de Firebase:', error);
-      }
-    } else {
-      // Eliminar el token de la cookie cuando el usuario cierre sesión
-      document.cookie = 'firebaseToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      console.log('[Auth] Token de Firebase eliminado de cookie');
-    }
-  };
-
-  // Efecto para escuchar cambios en el estado de autenticación
+  // Efecto para manejar cambios en el estado de autenticación
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-      await handleFirebaseToken(user);
-      setLoading(false);
-    }, (error) => {
-      console.error('Error en onAuthStateChanged:', error);
-      setError(error instanceof Error ? error.message : 'Error en la autenticación');
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setLoading(true);
+      
+      if (firebaseUser) {
+        try {
+          // Obtener el token ID del usuario
+          const idToken = await firebaseUser.getIdToken();
+          
+          // Guardar el token en una cookie con configuración más permisiva para desarrollo
+          const isProduction = process.env.NODE_ENV === 'production';
+          const cookieOptions = isProduction 
+            ? `firebaseToken=${idToken}; path=/; max-age=3600; secure; samesite=strict`
+            : `firebaseToken=${idToken}; path=/; max-age=3600; samesite=lax`;
+          
+          document.cookie = cookieOptions;
+          
+          setUser(firebaseUser);
+        } catch (error) {
+          console.error('Error al obtener el token:', error);
+          setUser(null);
+        }
+      } else {
+        // Limpiar la cookie cuando el usuario se desconecta
+        document.cookie = 'firebaseToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        setUser(null);
+      }
+      
       setLoading(false);
     });
 
-    // Limpiar la suscripción al desmontar
     return () => unsubscribe();
   }, []);
 
@@ -96,7 +94,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // El token se manejará automáticamente en onAuthStateChanged
+      // Obtener el token inmediatamente y establecer la cookie
+      const idToken = await userCredential.user.getIdToken();
+      const isProduction = process.env.NODE_ENV === 'production';
+      const cookieOptions = isProduction 
+        ? `firebaseToken=${idToken}; path=/; max-age=3600; secure; samesite=strict`
+        : `firebaseToken=${idToken}; path=/; max-age=3600; samesite=lax`;
+      
+      document.cookie = cookieOptions;
+      
+      // Pequeña pausa para asegurar que la cookie se establezca
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       return userCredential.user;
     } catch (error) {
       console.error('Error al iniciar sesión:', error);
@@ -119,7 +128,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       const userCredential = await signInWithPopup(auth, provider);
       
-      // El token se manejará automáticamente en onAuthStateChanged
+      // Obtener el token inmediatamente y establecer la cookie
+      const idToken = await userCredential.user.getIdToken();
+      const isProduction = process.env.NODE_ENV === 'production';
+      const cookieOptions = isProduction 
+        ? `firebaseToken=${idToken}; path=/; max-age=3600; secure; samesite=strict`
+        : `firebaseToken=${idToken}; path=/; max-age=3600; samesite=lax`;
+      
+      document.cookie = cookieOptions;
+      
+      // Pequeña pausa para asegurar que la cookie se establezca
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       return userCredential.user;
     } catch (error) {
       console.error('Error al iniciar sesión con Google:', error);
@@ -142,7 +162,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await updateProfile(userCredential.user, { displayName });
       }
       
-      // El token se manejará automáticamente en onAuthStateChanged
+      // Obtener el token inmediatamente y establecer la cookie
+      const idToken = await userCredential.user.getIdToken();
+      const isProduction = process.env.NODE_ENV === 'production';
+      const cookieOptions = isProduction 
+        ? `firebaseToken=${idToken}; path=/; max-age=3600; secure; samesite=strict`
+        : `firebaseToken=${idToken}; path=/; max-age=3600; samesite=lax`;
+      
+      document.cookie = cookieOptions;
+      
+      // Pequeña pausa para asegurar que la cookie se establezca
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       return userCredential.user;
     } catch (error) {
       console.error('Error al registrar usuario:', error);
@@ -159,8 +190,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setError(null);
       
+      // Limpiar la cookie inmediatamente
+      document.cookie = 'firebaseToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      
       // Firebase signOut automáticamente disparará onAuthStateChanged con user = null
-      // lo que eliminará el token de la cookie
       await firebaseSignOut(auth);
     } catch (error) {
       console.error('Error al cerrar sesión:', error);

@@ -34,23 +34,29 @@ function extractFirebaseToken(request: NextRequest): string | null {
   // Primero intentar obtener el token de la cookie 'firebaseToken'
   const tokenFromCookie = request.cookies.get('firebaseToken')?.value;
   if (tokenFromCookie) {
+    console.log('Token encontrado en cookie');
     return tokenFromCookie;
   }
 
   // Si no hay cookie, intentar obtener del header Authorization
   const authHeader = request.headers.get('authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
+    console.log('Token encontrado en header Authorization');
     return authHeader.substring(7); // Remover 'Bearer ' del inicio
   }
 
+  console.log('No se encontró token en cookie ni en header');
   return null;
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
+  console.log(`Middleware ejecutándose para: ${pathname}`);
+  
   // Permitir rutas públicas
   if (publicRoutes.some(route => pathname.startsWith(route))) {
+    console.log(`Ruta pública permitida: ${pathname}`);
     return NextResponse.next();
   }
   
@@ -59,8 +65,11 @@ export async function middleware(request: NextRequest) {
   
   // Si no hay token, redirigir o devolver error
   if (!firebaseToken) {
+    console.log(`No hay token para la ruta: ${pathname}`);
+    
     // Para rutas de API, devolver un error 401
     if (apiRoutes.some(route => pathname.startsWith(route))) {
+      console.log('Devolviendo error 401 para ruta de API');
       return NextResponse.json(
         { 
           error: 'Token de autenticación requerido',
@@ -71,11 +80,14 @@ export async function middleware(request: NextRequest) {
     }
     
     // Para rutas normales, redirigir al login
+    console.log('Redirigiendo al login');
     const url = new URL('/auth/login', request.url);
     url.searchParams.set('callbackUrl', encodeURI(request.url));
     return NextResponse.redirect(url);
   }
 
+  console.log(`Token válido encontrado para: ${pathname}`);
+  
   // TODO: Implementar verificación del token en una API route separada
   // Por ahora, permitir el acceso para que el build funcione
   const response = NextResponse.next();

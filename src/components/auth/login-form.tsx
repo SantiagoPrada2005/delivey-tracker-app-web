@@ -51,8 +51,9 @@ export function LoginForm() {
 
     try {
       await signIn(email, password);
-      // Redireccionar al dashboard después del inicio de sesión exitoso
-      router.push('/');
+      // Usar window.location.href para forzar una recarga completa
+      // Esto asegura que el middleware pueda leer la cookie correctamente
+      window.location.href = '/';
     } catch (error) {
       // El error ya se maneja en el contexto de autenticación
       console.error('Error en el formulario de inicio de sesión:', error);
@@ -65,8 +66,9 @@ export function LoginForm() {
 
     try {
       await signInWithGoogle();
-      // Redireccionar al dashboard después del inicio de sesión exitoso
-      router.push('/');
+      // Usar window.location.href para forzar una recarga completa
+      // Esto asegura que el middleware pueda leer la cookie correctamente
+      window.location.href = '/';
     } catch (error) {
       // El error ya se maneja en el contexto de autenticación
       console.error('Error en el inicio de sesión con Google:', error);

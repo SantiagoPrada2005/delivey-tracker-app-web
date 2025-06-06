@@ -6,5 +6,7 @@ export * from './detallesPedido';
 export * from './repartidores';
 export * from './asignacionesPedido';
 export * from './organizations';
+export * from './organizationInvitations';
+export * from './organizationRequests';
 export * from './users';
 export * from './userPermitions';
