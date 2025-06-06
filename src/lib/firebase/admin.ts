@@ -36,7 +36,7 @@
 
 import * as admin from 'firebase-admin';
 import type { DecodedIdToken } from 'firebase-admin/auth'; // Solo para el tipado
-import serviceAccountCredentials_json from '../../../gestor-pedidos-15764-firebase-adminsdk-hi0zn-c5572fa398.json';
+import serviceAccountCredentials_json from '../../../etc/secrets/gestor-pedidos-15764-firebase-adminsdk-hi0zn-c5572fa398.json';
 
 // --- Configuración de Credenciales de Cuenta de Servicio ---
 // Las credenciales se cargan directamente desde el archivo JSON importado.
