@@ -6,18 +6,25 @@ import type { NextRequest } from 'next/server';
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
+     * Match specific protected routes only
+     * Exclude public routes, API routes, static files, and favicon
      */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/dashboard/:path*',
+    '/admin/:path*',
+    '/clientes/:path*',
+    '/pedidos/:path*',
+    '/productos/:path*',
+    '/repartidores/:path*',
+    '/configuracion/:path*',
+    '/notificaciones/:path*',
+    '/perfil/:path*',
+    '/organization/:path*'
   ],
 };
 
 // Rutas públicas que no requieren autenticación
 const publicRoutes = [
+  '/',
   '/auth/login',
   '/auth/register',
   '/auth/reset-password',

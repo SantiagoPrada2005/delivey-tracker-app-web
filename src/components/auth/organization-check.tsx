@@ -7,8 +7,12 @@ import { useOrganization } from '@/hooks/useOrganization';
 
 // Rutas que no requieren verificación de organización
 const exemptRoutes = [
+  '/',
   '/login',
   '/register',
+  '/auth/login',
+  '/auth/register',
+  '/auth/reset-password',
   '/organization/create',
   '/organization/invitations',
   '/organization/requests'
