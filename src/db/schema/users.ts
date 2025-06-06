@@ -33,7 +33,7 @@ import { organizationRequests } from './organizationRequests';
  */
 export const users = mysqlTable('users', {
   // Clave primaria interna de la BD (opcional si firebaseUid es tu PK, pero recomendable tener una PK numérica simple)
-  id: int('id').autoincrement().primaryKey(), // `serial` es un alias para `int unsigned not null auto_increment unique`
+  id: int('id', { unsigned: true }).autoincrement().primaryKey(), // `serial` es un alias para `int unsigned not null auto_increment unique`
 
   // --- Campos de Firebase Auth ---
   firebaseUid: varchar('firebase_uid', { length: 255 }).notNull().unique(), // Muy importante: único y notNull

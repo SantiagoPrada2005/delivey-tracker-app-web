@@ -15,6 +15,13 @@
       "when": 1749079148835,
       "tag": "0001_bizarre_toad",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1749186825507,
+      "tag": "0002_colorful_loki",
+      "breakpoints": true
     }
   ]
 }

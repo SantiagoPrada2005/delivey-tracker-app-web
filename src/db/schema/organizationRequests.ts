@@ -1,4 +1,4 @@
-import { mysqlTable, serial, varchar, timestamp, text, mysqlEnum, int } from 'drizzle-orm/mysql-core';
+import { mysqlTable, serial, int, varchar, text, timestamp, mysqlEnum, foreignKey } from 'drizzle-orm/mysql-core';
 import { relations, type InferSelectModel, type InferInsertModel } from 'drizzle-orm';
 import { users } from './users';
 import { organizations } from './organizations';
@@ -18,9 +18,7 @@ export const organizationRequests = mysqlTable('organization_requests', {
   id: serial('id').primaryKey(),
   
   // Usuario que solicita crear la organización
-  requestedBy: int('requested_by', { unsigned: true })
-    .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' })
-    .notNull(),
+  requestedBy: int('requested_by', { unsigned: true }).notNull(),
   
   // Información de la organización solicitada
   organizationName: varchar('organization_name', { length: 100 }).notNull(),
@@ -43,8 +41,7 @@ export const organizationRequests = mysqlTable('organization_requests', {
     .notNull(),
   
   // Administrador que revisó la solicitud
-  reviewedBy: int('reviewed_by', { unsigned: true })
-    .references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  reviewedBy: int('reviewed_by', { unsigned: true }),
   
   // Fecha de revisión
   reviewedAt: timestamp('reviewed_at'),
@@ -53,8 +50,7 @@ export const organizationRequests = mysqlTable('organization_requests', {
   reviewComments: text('review_comments'),
   
   // ID de la organización creada (si fue aprobada)
-  createdOrganizationId: int('created_organization_id', { unsigned: true })
-    .references(() => organizations.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  createdOrganizationId: int('created_organization_id', { unsigned: true }),
   
   // Prioridad de la solicitud
   priority: mysqlEnum('priority', ['low', 'medium', 'high', 'urgent'])
@@ -64,7 +60,26 @@ export const organizationRequests = mysqlTable('organization_requests', {
   // Timestamps
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  // Foreign keys con nombres personalizados más cortos
+  foreignKey({
+    name: 'org_req_requested_by_fk',
+    columns: [table.requestedBy],
+    foreignColumns: [users.id]
+  }).onDelete('cascade').onUpdate('cascade'),
+  
+  foreignKey({
+    name: 'org_req_reviewed_by_fk',
+    columns: [table.reviewedBy],
+    foreignColumns: [users.id]
+  }).onDelete('set null').onUpdate('cascade'),
+  
+  foreignKey({
+    name: 'org_req_created_org_fk',
+    columns: [table.createdOrganizationId],
+    foreignColumns: [organizations.id]
+  }).onDelete('set null').onUpdate('cascade')
+]);
 
 // Relaciones
 export const organizationRequestsRelations = relations(organizationRequests, ({ one }) => ({
