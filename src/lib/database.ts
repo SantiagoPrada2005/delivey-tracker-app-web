@@ -29,10 +29,11 @@ export async function getClienteById(id: number, organizationId: number) {
 }
 
 export async function createCliente(clienteData: Omit<typeof clientes.$inferInsert, 'organizationId'>, organizationId: number) {
-  return await db.insert(clientes).values({
+  const result = await db.insert(clientes).values({
     ...clienteData,
     organizationId
-  });
+  }).$returningId();
+  return result[0];
 }
 
 export async function updateCliente(id: number, clienteData: Partial<typeof clientes.$inferInsert>, organizationId: number) {
@@ -58,10 +59,11 @@ export async function getProductoById(id: number, organizationId: number) {
 }
 
 export async function createProducto(productoData: Omit<typeof productos.$inferInsert, 'organizationId'>, organizationId: number) {
-  return await db.insert(productos).values({
+  const result = await db.insert(productos).values({
     ...productoData,
     organizationId
-  });
+  }).$returningId();
+  return result[0];
 }
 
 export async function updateProducto(id: number, productoData: Partial<typeof productos.$inferInsert>, organizationId: number) {
@@ -87,10 +89,11 @@ export async function getPedidoById(id: number, organizationId: number) {
 }
 
 export async function createPedido(pedidoData: Omit<typeof pedidos.$inferInsert, 'organizationId'>, organizationId: number) {
-  return await db.insert(pedidos).values({
+  const result = await db.insert(pedidos).values({
     ...pedidoData,
     organizationId
-  });
+  }).$returningId();
+  return result[0];
 }
 
 export async function updatePedido(id: number, pedidoData: Partial<typeof pedidos.$inferInsert>, organizationId: number) {
@@ -116,10 +119,11 @@ export async function getRepartidorById(id: number, organizationId: number) {
 }
 
 export async function createRepartidor(repartidorData: Omit<typeof repartidores.$inferInsert, 'organizationId'>, organizationId: number) {
-  return await db.insert(repartidores).values({
+  const result = await db.insert(repartidores).values({
     ...repartidorData,
     organizationId
-  });
+  }).$returningId();
+  return result[0];
 }
 
 export async function updateRepartidor(id: number, repartidorData: Partial<typeof repartidores.$inferInsert>, organizationId: number) {
@@ -185,7 +189,8 @@ export async function getDetallesPedidoByPedido(pedidoId: number, organizationId
 }
 
 export async function createDetallePedido(detalleData: typeof detallesPedido.$inferInsert) {
-  return await db.insert(detallesPedido).values(detalleData);
+  const result = await db.insert(detallesPedido).values(detalleData).$returningId();
+  return result[0];
 }
 
 export async function updateDetallePedido(id: number, detalleData: Partial<typeof detallesPedido.$inferInsert>, organizationId: number) {
@@ -302,10 +307,11 @@ export async function getUserByEmail(email: string) {
 }
 
 export async function createUser(userData: Omit<typeof users.$inferInsert, 'organizationId'>, organizationId: number) {
-  return await db.insert(users).values({
+  const result = await db.insert(users).values({
     ...userData,
     organizationId
-  });
+  }).$returningId();
+  return result[0];
 }
 
 export async function updateUser(id: number, userData: Partial<typeof users.$inferInsert>, organizationId: number) {
@@ -336,7 +342,8 @@ export async function getUserPermissions(organizationId: number) {
 */
 
 export async function createUserPermissions(permissionsData: typeof userPermitions.$inferInsert) {
-  return await db.insert(userPermitions).values(permissionsData);
+  const result = await db.insert(userPermitions).values(permissionsData).$returningId();
+  return result[0];
 }
 
 export async function updateUserPermissions(permissionId: number, permissionsData: Partial<typeof userPermitions.$inferInsert>) {
@@ -462,12 +469,12 @@ export async function createPedidoCompleto(
 ) {
   return await db.transaction(async (tx) => {
     // Crear el pedido
-    const [pedidoResult] = await tx.insert(pedidos).values({
+    const pedidoResult = await tx.insert(pedidos).values({
       ...pedidoData,
       organizationId
-    });
+    }).$returningId();
     
-    const pedidoId = pedidoResult.insertId;
+    const pedidoId = pedidoResult[0].id;
 
     // Crear los detalles del pedido
     if (detallesData.length > 0) {
