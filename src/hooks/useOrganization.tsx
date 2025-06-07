@@ -29,10 +29,36 @@ interface OrganizationContextType {
 }
 
 type OrganizationStatus = {
-  hasOrganization: boolean;
-  hasPendingInvitations: boolean;
-  hasPendingRequests: boolean;
-  organization?: Organization;
+  success: boolean;
+  status: 'HAS_ORGANIZATION' | 'PENDING_INVITATION' | 'PENDING_REQUEST' | 'NO_ORGANIZATION';
+  data?: {
+    user: {
+      id: number;
+      email: string;
+      organizationId: number | null;
+      role: string;
+    };
+    organization?: {
+      id: number;
+      name: string;
+      slug: string;
+    };
+    pendingInvitations?: Array<{
+      id: number;
+      organizationName: string;
+      inviterEmail: string;
+      token: string;
+      expiresAt: Date;
+    }>;
+    pendingRequests?: Array<{
+      id: number;
+      organizationName: string;
+      status: string;
+      requestedAt: Date;
+    }>;
+  };
+  error?: string;
+  code?: string;
 }
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
@@ -124,12 +150,12 @@ function OrganizationProvider({ children }: OrganizationProviderProps) {
     }
   }, [user, authLoading, checkOrganizationStatus]);
   
-  // Cargar organizaciones al montar el componente
+  // Cargar organizaciones solo si no se obtuvieron del checkOrganizationStatus
   useEffect(() => {
-    if (user && !authLoading) {
+    if (user && !authLoading && organizations.length === 0 && organizationStatus?.status !== 'HAS_ORGANIZATION') {
       loadOrganizations();
     }
-  }, [user, authLoading, loadOrganizations]);
+  }, [user, authLoading, organizations.length, organizationStatus?.status, loadOrganizations]);
 
   // Cargar organización seleccionada desde localStorage
   useEffect(() => {

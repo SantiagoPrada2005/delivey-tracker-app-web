@@ -206,14 +206,25 @@ function getOrganizationRedirect(status: OrganizationStatus['status']): string {
 /**
  * Crea headers de usuario para pasar a las rutas
  */
-function createUserHeaders(user: AuthenticatedUser, token: string) {
-  return {
+function createUserHeaders(user: AuthenticatedUser, token: string, organizationData?: { user: { organizationId: number | null; role: string; id: number } }) {
+  const headers: Record<string, string> = {
     'x-user-id': user.uid,
     'x-user-email': user.email,
     'x-user-name': user.name || '',
     'x-user-verified': user.emailVerified.toString(),
     'x-firebase-token': token,
   };
+  
+  // Agregar información de organización si está disponible
+  if (organizationData?.user) {
+    if (organizationData.user.organizationId) {
+      headers['x-user-organization'] = organizationData.user.organizationId.toString();
+    }
+    headers['x-user-role'] = organizationData.user.role;
+    headers['x-user-db-id'] = organizationData.user.id.toString();
+  }
+  
+  return headers;
 }
 
 // ============================================================================
@@ -340,7 +351,7 @@ export async function middleware(request: NextRequest) {
     // Si ya está en la ruta correcta, permitir continuar
     if (pathname.startsWith(redirectPath)) {
       const response = NextResponse.next();
-      Object.entries(createUserHeaders(user, firebaseToken)).forEach(([key, value]) => {
+      Object.entries(createUserHeaders(user, firebaseToken, organizationStatus.data ? { user: organizationStatus.data.user } : undefined)).forEach(([key, value]) => {
         response.headers.set(key, value);
       });
       return response;
@@ -367,7 +378,7 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
   
   // Agregar headers de usuario y organización
-  Object.entries(createUserHeaders(user, firebaseToken)).forEach(([key, value]) => {
+  Object.entries(createUserHeaders(user, firebaseToken, organizationStatus.data ? { user: organizationStatus.data.user } : undefined)).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
   
@@ -376,11 +387,6 @@ export async function middleware(request: NextRequest) {
     response.headers.set('x-organization-id', organizationStatus.data.organization.id.toString());
     response.headers.set('x-organization-name', organizationStatus.data.organization.name);
     response.headers.set('x-organization-slug', organizationStatus.data.organization.slug);
-  }
-  
-  if (organizationStatus.data?.user) {
-    response.headers.set('x-user-role', organizationStatus.data.user.role);
-    response.headers.set('x-user-db-id', organizationStatus.data.user.id.toString());
   }
   
   return response;

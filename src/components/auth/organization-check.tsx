@@ -54,23 +54,23 @@ export function OrganizationCheck({ children }: OrganizationCheckProps) {
 
     // Si tenemos el estado de la organización, manejar redirecciones
     if (organizationStatus) {
-      if (organizationStatus.hasPendingInvitations) {
+      if (organizationStatus.status === 'PENDING_INVITATION') {
         if (pathname !== '/organization/invitations') {
           console.log('[Client Redirect] Redirigiendo a invitaciones pendientes');
           router.push('/organization/invitations');
         }
-      } else if (organizationStatus.hasPendingRequests) {
+      } else if (organizationStatus.status === 'PENDING_REQUEST') {
         if (pathname !== '/organization/requests') {
           console.log('[Client Redirect] Redirigiendo a solicitudes pendientes');
           router.push('/organization/requests');
         }
-      } else if (!organizationStatus.hasOrganization) {
+      } else if (organizationStatus.status === 'NO_ORGANIZATION') {
         if (pathname !== '/organization/create') {
           console.log('[Client Redirect] Redirigiendo a crear organización');
           router.push('/organization/create');
         }
       }
-      // Si hasOrganization es true, el usuario tiene organización y puede acceder a todas las rutas
+      // Si status es 'HAS_ORGANIZATION', el usuario tiene organización y puede acceder a todas las rutas
     }
   }, [organizationStatus, pathname, router, user, authLoading, checkingStatus]);
 
