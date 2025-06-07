@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganizationFlow } from '@/contexts/organization-flow-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
@@ -20,6 +21,7 @@ type Invitation = {
 
 export function OrganizationInvitations() {
   const { user } = useAuth();
+  const { refreshOrganizationStatus, completeFlow } = useOrganizationFlow();
   const router = useRouter();
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +89,11 @@ export function OrganizationInvitations() {
       // Actualizar la lista de invitaciones
       if (action === 'accept') {
         setSuccessMessage('Invitación aceptada correctamente. Redirigiendo...');
+        
+        // Actualizar el estado de la organización y completar el flujo
+        await refreshOrganizationStatus();
+        completeFlow();
+        
         // Redireccionar al dashboard después de aceptar
         setTimeout(() => {
           router.push('/');
@@ -95,6 +102,9 @@ export function OrganizationInvitations() {
         setSuccessMessage('Invitación rechazada');
         // Actualizar la lista de invitaciones
         setInvitations(invitations.filter(inv => inv.id !== invitationId));
+        
+        // Refrescar el estado para verificar si hay más invitaciones
+        await refreshOrganizationStatus();
       }
     } catch (err) {
       console.error(`Error ${action === 'accept' ? 'accepting' : 'rejecting'} invitation:`, err);

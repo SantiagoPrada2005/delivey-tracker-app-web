@@ -114,6 +114,8 @@ function OrganizationProvider({ children }: OrganizationProviderProps) {
   const checkOrganizationStatus = useCallback(async () => {
     if (!user || authLoading) return;
     
+    console.log('🔍 useOrganization - checkOrganizationStatus iniciado');
+    
     try {
       setCheckingStatus(true);
       setError(null); // Limpiar errores previos
@@ -125,9 +127,15 @@ function OrganizationProvider({ children }: OrganizationProviderProps) {
         }
       });
 
+      console.log('🌐 useOrganization - Respuesta API:', {
+        status: response.status,
+        ok: response.ok
+      });
+
       // Manejar diferentes códigos de estado de manera robusta
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ useOrganization - Respuesta exitosa:', data);
         setOrganizationStatus(data);
         
         // Si el usuario tiene una organización, cargar las organizaciones
@@ -144,30 +152,38 @@ function OrganizationProvider({ children }: OrganizationProviderProps) {
           errorData = { error: 'Error de comunicación con el servidor' };
         }
         
+        console.log('❌ useOrganization - Error en respuesta:', {
+          status: response.status,
+          errorData
+        });
+        
         // Si es un error de autenticación (401), establecer estado sin organización
         if (response.status === 401) {
-          setOrganizationStatus({
+          const statusData: OrganizationStatus = {
             success: false,
-            status: 'NO_ORGANIZATION',
-            error: 'Usuario no autenticado',
-            code: 'AUTH_REQUIRED'
-          });
+            status: 'NO_ORGANIZATION' as const,
+            error: 'Usuario no autenticado'
+          };
+          console.log('🚫 useOrganization - Estableciendo NO_ORGANIZATION (401):', statusData);
+          setOrganizationStatus(statusData);
         } else if (response.status === 404) {
           // Usuario no encontrado en la base de datos
-          setOrganizationStatus({
+          const statusData: OrganizationStatus = {
             success: false,
-            status: 'NO_ORGANIZATION',
-            error: 'Usuario no encontrado',
-            code: 'USER_NOT_FOUND'
-          });
+            status: 'NO_ORGANIZATION' as const,
+            error: 'Usuario no encontrado'
+          };
+          console.log('🚫 useOrganization - Estableciendo NO_ORGANIZATION (404):', statusData);
+          setOrganizationStatus(statusData);
         } else {
           // Otros errores del servidor
-          setOrganizationStatus({
+          const statusData: OrganizationStatus = {
             success: false,
-            status: 'NO_ORGANIZATION',
-            error: errorData.error || 'Error del servidor',
-            code: errorData.code || 'SERVER_ERROR'
-          });
+            status: 'NO_ORGANIZATION' as const,
+            error: errorData.error || 'Error del servidor'
+          };
+          console.log('🚫 useOrganization - Estableciendo NO_ORGANIZATION (otro error):', statusData);
+          setOrganizationStatus(statusData);
         }
         
         console.warn('Error al verificar organización:', {
@@ -179,16 +195,18 @@ function OrganizationProvider({ children }: OrganizationProviderProps) {
       console.error('Error de red al verificar organización:', error);
       
       // En caso de error de red, establecer estado sin organización
-      setOrganizationStatus({
+      const statusData: OrganizationStatus = {
         success: false,
-        status: 'NO_ORGANIZATION',
-        error: 'Error de conexión',
-        code: 'NETWORK_ERROR'
-      });
+        status: 'NO_ORGANIZATION' as const,
+        error: 'Error de conexión'
+      };
+      console.log('🚫 useOrganization - Estableciendo NO_ORGANIZATION (error de red):', statusData);
+      setOrganizationStatus(statusData);
       
       setError('Error de conexión al verificar organización');
     } finally {
       setCheckingStatus(false);
+      console.log('🏁 useOrganization - checkOrganizationStatus finalizado');
     }
   }, [user, authLoading, selectOrganization]);
 

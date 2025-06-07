@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganizationFlow } from '@/contexts/organization-flow-context';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -56,6 +57,7 @@ const generateSlug = (text: string): string => {
 
 export function CreateOrganizationForm() {
   const { user } = useAuth();
+  const { refreshOrganizationStatus, completeFlow } = useOrganizationFlow();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -113,6 +115,10 @@ export function CreateOrganizationForm() {
       }
 
       setSuccess(true);
+      
+      // Actualizar el estado de la organización y completar el flujo
+      await refreshOrganizationStatus();
+      completeFlow();
       
       // Redireccionar al dashboard después de un breve retraso
       setTimeout(() => {

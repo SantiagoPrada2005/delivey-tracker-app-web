@@ -38,6 +38,8 @@ const PUBLIC_ROUTES = [
 const API_ROUTES = [
   '/api/auth/verify',
   '/api/auth/sync',
+  '/api/user/organization-status',
+  '/api/organizations',
 ] as const;
 
 // Nota: Las rutas protegidas se manejan dinámicamente en la función middleware
@@ -191,13 +193,15 @@ async function checkOrganizationStatus(
 /**
  * Determina la redirección basada en el estado de organización
  */
-function getOrganizationRedirect(status: OrganizationStatus['status']): string {
+function getOrganizationRedirect(status: OrganizationStatus['status']): string | null {
   switch (status) {
     case 'PENDING_INVITATION':
       return '/organization/invitations';
     case 'PENDING_REQUEST':
       return '/organization/requests';
     case 'NO_ORGANIZATION':
+      // No redirigir automáticamente, permitir que el componente bloqueador se muestre
+      return null;
     default:
       return '/organization/create';
   }
@@ -235,6 +239,8 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
   console.log(`[Middleware] Processing: ${pathname}`);
+  console.log(`[Middleware] Headers:`, Object.fromEntries(request.headers.entries()));
+  console.log(`[Middleware] Cookies:`, Object.fromEntries(request.cookies.getAll().map(c => [c.name, c.value])));
 
   // ========================================
   // 1. RUTAS PÚBLICAS - Permitir sin verificación
@@ -307,12 +313,13 @@ export async function middleware(request: NextRequest) {
   // ========================================
   // 5. RUTAS QUE NO REQUIEREN ORGANIZACIÓN
   // ========================================
+  console.log(`[Middleware] Checking if ${pathname} matches exempt routes:`, ORGANIZATION_EXEMPT_ROUTES);
   if (matchesRoute(pathname, ORGANIZATION_EXEMPT_ROUTES)) {
     console.log(`[Middleware] Organization exempt route: ${pathname}`);
     
     const response = NextResponse.next();
     
-    // Agregar headers de usuario
+    // Agregar headers básicos de usuario para todas las rutas exentas
     Object.entries(createUserHeaders(user, firebaseToken)).forEach(([key, value]) => {
       response.headers.set(key, value);
     });
@@ -346,7 +353,18 @@ export async function middleware(request: NextRequest) {
   if (organizationStatus.status !== 'HAS_ORGANIZATION') {
     const redirectPath = getOrganizationRedirect(organizationStatus.status);
     
-    console.log(`[Middleware] User needs organization setup: ${organizationStatus.status} -> ${redirectPath}`);
+    console.log(`[Middleware] User needs organization setup: ${organizationStatus.status} -> ${redirectPath || 'allow blocking component'}`);
+    
+    // Si no hay redirectPath (caso NO_ORGANIZATION), permitir que la página se renderice
+    // para que el componente bloqueador pueda mostrarse
+    if (!redirectPath) {
+      console.log(`[Middleware] Allowing page render for blocking component: ${organizationStatus.status}`);
+      const response = NextResponse.next();
+      Object.entries(createUserHeaders(user, firebaseToken, organizationStatus.data ? { user: organizationStatus.data.user } : undefined)).forEach(([key, value]) => {
+        response.headers.set(key, value);
+      });
+      return response;
+    }
     
     // Si ya está en la ruta correcta, permitir continuar
     if (pathname.startsWith(redirectPath)) {
@@ -400,12 +418,8 @@ export const config = {
   runtime: 'nodejs',
   matcher: [
     /*
-     * Coincidir con todas las rutas excepto:
-     * - api routes que manejan auth internamente
-     * - archivos estáticos (_next/static)
-     * - imágenes (_next/image)
-     * - favicon y otros assets
+     * Coincidir con todas las rutas excepto archivos estáticos
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\.(?:jpg|jpeg|gif|png|svg|ico|webp)).*)',
   ],
 };

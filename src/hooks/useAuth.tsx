@@ -364,34 +364,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearError,
   };
   
-  // Efecto para verificar el estado de organización cuando el usuario está autenticado
-  useEffect(() => {
-    const checkOrganizationStatus = async () => {
-      if (user && !loading) {
-        try {
-          const idToken = await user.getIdToken();
-          const response = await fetch('/api/user/organization-status', {
-            headers: {
-              'Authorization': `Bearer ${idToken}`
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            console.log('[Organization Status]', data.status);
-            
-            // Aquí se podría implementar lógica adicional basada en el estado
-            // Por ejemplo, redireccionar a una página de creación de organización
-            // si el usuario no tiene una organización asignada
-          }
-        } catch (error) {
-          console.error('[Organization Status] Error:', error);
-        }
-      }
-    };
-    
-    checkOrganizationStatus();
-  }, [user, loading]);
+  // REMOVED: Efecto duplicado para verificar el estado de organización
+  // La verificación de organización se maneja en useOrganization hook
+  // Este useEffect estaba causando conflictos con el middleware
 
   return (
     <AuthContext.Provider value={value}>

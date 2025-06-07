@@ -1,7 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
 import { useOrganization, type Organization } from '@/hooks/useOrganization';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -58,27 +57,38 @@ interface OrganizationFlowProviderProps {
 export function OrganizationFlowProvider({ children }: OrganizationFlowProviderProps) {
   const { user } = useAuth();
   const { organizationStatus, checkOrganizationStatus, checkingStatus, currentOrganization } = useOrganization();
-  const router = useRouter();
-  const pathname = usePathname();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
-  const [hasRedirected, setHasRedirected] = useState(false);
 
   // Determinar el paso actual del flujo
   const getCurrentStep = useCallback((): OrganizationFlowStep => {
+    console.log('🔍 OrganizationFlow - getCurrentStep:', {
+      checkingStatus,
+      organizationStatus: organizationStatus ? {
+        status: organizationStatus.status,
+        success: organizationStatus.success,
+        error: organizationStatus.error
+      } : null
+    });
+    
     if (checkingStatus) return 'loading';
     if (!organizationStatus) return 'loading';
     
     switch (organizationStatus.status) {
       case 'NO_ORGANIZATION':
+        console.log('🚫 OrganizationFlow - Estado: NO_ORGANIZATION');
         return 'no-organization';
       case 'PENDING_INVITATION':
+        console.log('📧 OrganizationFlow - Estado: PENDING_INVITATION');
         return 'pending-invitation';
       case 'PENDING_REQUEST':
+        console.log('📝 OrganizationFlow - Estado: PENDING_REQUEST');
         return 'pending-request';
       case 'HAS_ORGANIZATION':
+        console.log('✅ OrganizationFlow - Estado: HAS_ORGANIZATION');
         return 'has-organization';
       default:
+        console.log('❓ OrganizationFlow - Estado desconocido:', organizationStatus.status);
         return 'loading';
     }
   }, [checkingStatus, organizationStatus]);
@@ -86,48 +96,25 @@ export function OrganizationFlowProvider({ children }: OrganizationFlowProviderP
   const currentStep = getCurrentStep();
   const isFlowActive = user && currentStep !== 'has-organization';
 
-  // Manejar redirecciones automáticas
-  const handleRedirection = useCallback((step: OrganizationFlowStep) => {
-    // Evitar redirecciones múltiples
-    if (hasRedirected) return;
-    
-    // Rutas que no requieren redirección automática
-    const exemptRoutes = [
-      '/auth/login',
-      '/auth/register', 
-      '/auth/verify-email',
-      '/organization/create',
-      '/organization/invitations',
-      '/organization/requests'
-    ];
-    
-    // Si ya estamos en una ruta exenta, no redirigir
-    if (exemptRoutes.some(route => pathname.startsWith(route))) {
-      return;
-    }
-    
-    // Determinar la ruta de redirección según el estado
-    let redirectPath: string | null = null;
-    
-    switch (step) {
-      case 'no-organization':
-        redirectPath = '/organization/create';
-        break;
-      case 'pending-invitation':
-        redirectPath = '/organization/invitations';
-        break;
-      case 'pending-request':
-        redirectPath = '/organization/requests';
-        break;
-      default:
-        return;
-    }
-    
-    if (redirectPath) {
-      setHasRedirected(true);
-      router.push(redirectPath);
-    }
-  }, [hasRedirected, pathname, router]);
+  console.log('🎯 OrganizationFlow - Estado calculado:', {
+    user: !!user,
+    currentStep,
+    isFlowActive
+  });
+
+  // NOTA: La función handleRedirection fue removida ya que no se está utilizando
+  // debido a que las redirecciones automáticas están deshabilitadas en favor
+  // del componente bloqueador de pantalla completa
+
+  // Efecto para manejar redirecciones automáticas cuando cambia el estado
+  // DESHABILITADO: Permitir que el componente bloqueador se muestre en lugar de redirigir
+  // useEffect(() => {
+  //   // Solo redirigir si el usuario está autenticado, no está verificando estado,
+  //   // y el paso actual requiere redirección
+  //   if (user && !checkingStatus && currentStep !== 'loading' && currentStep !== 'has-organization' && !hasRedirected) {
+  //     handleRedirection(currentStep);
+  //   }
+  // }, [user, checkingStatus, currentStep, handleRedirection, hasRedirected]);
 
   // Refrescar el estado de la organización
   const refreshOrganizationStatus = useCallback(async () => {
@@ -136,30 +123,32 @@ export function OrganizationFlowProvider({ children }: OrganizationFlowProviderP
       await checkOrganizationStatus();
       setLastRefresh(new Date());
       
-      // Manejar redirección basada en el nuevo estado
-      const step = getCurrentStep();
-      if (step !== 'has-organization' && step !== 'loading') {
-        handleRedirection(step);
-      } else if (step === 'has-organization') {
-        setHasRedirected(false);
-      }
+      // DESHABILITADO: No redirigir automáticamente, permitir que el componente bloqueador se muestre
+      // setTimeout(() => {
+      //   const step = getCurrentStep();
+      //   if (step !== 'has-organization' && step !== 'loading') {
+      //     handleRedirection(step);
+      //   }
+      // }, 100);
     } catch (error) {
       console.error('Error refreshing organization status:', error);
     } finally {
       setIsRefreshing(false);
     }
-  }, [checkOrganizationStatus, getCurrentStep, handleRedirection]);
+  }, [checkOrganizationStatus]);
 
   // Completar el flujo (cuando el usuario tiene organización)
   const completeFlow = useCallback(() => {
-    setHasRedirected(false);
-    // Aquí se puede agregar lógica adicional cuando se completa el flujo
+    // Forzar una actualización del estado para asegurar que el flujo se complete
+    setTimeout(() => {
+      checkOrganizationStatus();
+    }, 500);
     console.log('Organization flow completed');
-  }, []);
+  }, [checkOrganizationStatus]);
   
-  // Resetear el estado de redirección
+  // Resetear el estado de redirección (función mantenida para compatibilidad)
   const resetRedirection = useCallback(() => {
-    setHasRedirected(false);
+    // No hay estado de redirección que resetear ya que las redirecciones automáticas están deshabilitadas
   }, []);
 
   // Datos de la organización con tipos específicos y validación
