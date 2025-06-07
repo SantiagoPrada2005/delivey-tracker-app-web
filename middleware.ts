@@ -30,6 +30,7 @@ const PUBLIC_ROUTES = [
   '/auth/login',
   '/auth/register',
   '/auth/reset-password',
+  '/landing'
 ] as const;
 
 /**

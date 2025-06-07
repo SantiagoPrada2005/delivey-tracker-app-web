@@ -12,6 +12,7 @@ import { useOrganizationFlow } from '@/contexts/organization-flow-context';
 
 // Rutas que no requieren verificación de organización
 const exemptRoutes = [
+  '/landing',
   '/auth/login',
   '/auth/register',
   '/auth/reset-password',
