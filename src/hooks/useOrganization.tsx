@@ -1,8 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from './useAuth';
-import { useRouter, usePathname } from 'next/navigation';
 
 // Definir el tipo Organization localmente para evitar importar desde database
 export interface Organization {
@@ -44,8 +43,6 @@ interface OrganizationProviderProps {
 
 function OrganizationProvider({ children }: OrganizationProviderProps) {
   const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
-  const pathname = usePathname();
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<number | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,14 +50,7 @@ function OrganizationProvider({ children }: OrganizationProviderProps) {
   const [organizationStatus, setOrganizationStatus] = useState<OrganizationStatus | null>(null);
   const [checkingStatus, setCheckingStatus] = useState(false);
   
-  // Rutas que no requieren verificación de organización
-  const exemptRoutes = useMemo(() => [
-    '/login',
-    '/register',
-    '/organization/create',
-    '/organization/invitations',
-    '/organization/requests'
-  ], []);
+
 
   const selectOrganization = useCallback((organizationId: number) => {
     setSelectedOrganizationId(organizationId);
@@ -113,24 +103,11 @@ function OrganizationProvider({ children }: OrganizationProviderProps) {
 
       const data = await response.json();
       setOrganizationStatus(data);
-
-      // Redirigir según el estado de la organización si no estamos en una ruta exenta
-      if (!exemptRoutes.some(route => pathname?.startsWith(route))) {
-        if (!data.hasOrganization) {
-          if (data.hasPendingInvitations) {
-            router.push('/organization/invitations');
-          } else if (data.hasPendingRequests) {
-            router.push('/organization/requests');
-          } else {
-            router.push('/organization/create');
-          }
-        }
-      }
       
       // Si el usuario tiene una organización, cargar las organizaciones
-      if (data.hasOrganization && data.organization) {
-        setOrganizations([data.organization]);
-        selectOrganization(data.organization.id);
+      if (data.status === 'HAS_ORGANIZATION' && data.data?.organization) {
+        setOrganizations([data.data.organization]);
+        selectOrganization(data.data.organization.id);
       }
     } catch (error) {
       console.error('Error al verificar organización:', error);
@@ -138,7 +115,7 @@ function OrganizationProvider({ children }: OrganizationProviderProps) {
     } finally {
       setCheckingStatus(false);
     }
-  }, [user, authLoading, pathname, router, exemptRoutes, selectOrganization]);
+  }, [user, authLoading, selectOrganization]);
 
   // Verificar estado de organización cuando cambia el usuario
   useEffect(() => {
