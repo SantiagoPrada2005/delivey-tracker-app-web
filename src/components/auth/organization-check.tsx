@@ -1,9 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrganization } from '@/hooks/useOrganization';
+import { NoOrganizationFlow } from '@/components/organization/no-organization-flow';
+import { OrganizationLoading } from '@/components/organization/organization-loading';
+import { PendingInvitationsFlow } from '@/components/organization/pending-invitations-flow';
+import { PendingRequestsFlow } from '@/components/organization/pending-requests-flow';
+import { useOrganizationFlow } from '@/contexts/organization-flow-context';
 
 // Rutas que no requieren verificación de organización
 const exemptRoutes = [
@@ -22,9 +27,9 @@ interface OrganizationCheckProps {
 
 export function OrganizationCheck({ children }: OrganizationCheckProps) {
   const { user, loading: authLoading } = useAuth();
-  const { organizationStatus, checkingStatus, checkOrganizationStatus } = useOrganization();
+  const { checkingStatus } = useOrganization();
+  const { currentStep, isFlowActive, refreshOrganizationStatus } = useOrganizationFlow();
   const pathname = usePathname();
-  const router = useRouter();
   const [hasChecked, setHasChecked] = useState(false);
 
   useEffect(() => {
@@ -35,52 +40,32 @@ export function OrganizationCheck({ children }: OrganizationCheckProps) {
 
     // Si hay usuario autenticado, verificar el estado de la organización
     if (user && !authLoading && !hasChecked) {
-      checkOrganizationStatus();
+      refreshOrganizationStatus();
       setHasChecked(true);
     }
-  }, [user, authLoading, pathname, checkOrganizationStatus, hasChecked]);
-
-  // Redirección del lado del cliente basada en el estado de la organización
-  useEffect(() => {
-    // Si la ruta está exenta, no redirigir
-    if (exemptRoutes.some(route => pathname.startsWith(route))) {
-      return;
-    }
-
-    // Si no hay usuario o está cargando, no hacer nada
-    if (!user || authLoading || checkingStatus) {
-      return;
-    }
-
-    // Si tenemos el estado de la organización, manejar redirecciones
-    if (organizationStatus) {
-      if (organizationStatus.status === 'PENDING_INVITATION') {
-        if (pathname !== '/organization/invitations') {
-          console.log('[Client Redirect] Redirigiendo a invitaciones pendientes');
-          router.push('/organization/invitations');
-        }
-      } else if (organizationStatus.status === 'PENDING_REQUEST') {
-        if (pathname !== '/organization/requests') {
-          console.log('[Client Redirect] Redirigiendo a solicitudes pendientes');
-          router.push('/organization/requests');
-        }
-      } else if (organizationStatus.status === 'NO_ORGANIZATION') {
-        if (pathname !== '/organization/create') {
-          console.log('[Client Redirect] Redirigiendo a crear organización');
-          router.push('/organization/create');
-        }
-      }
-      // Si status es 'HAS_ORGANIZATION', el usuario tiene organización y puede acceder a todas las rutas
-    }
-  }, [organizationStatus, pathname, router, user, authLoading, checkingStatus]);
+  }, [user, authLoading, pathname, refreshOrganizationStatus, hasChecked]);
 
   // Mostrar loading mientras se verifica la organización
   if (user && !authLoading && checkingStatus && !exemptRoutes.some(route => pathname.startsWith(route))) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-      </div>
-    );
+    return <OrganizationLoading />;
+  }
+
+  // Mostrar los flujos apropiados según el estado de la organización
+  if (user && !authLoading && isFlowActive && !exemptRoutes.some(route => pathname.startsWith(route))) {
+    switch (currentStep) {
+      case 'no-organization':
+        return <NoOrganizationFlow />;
+      case 'pending-invitation':
+        return <PendingInvitationsFlow />;
+      case 'pending-request':
+        return <PendingRequestsFlow />;
+      case 'loading':
+        return <OrganizationLoading />;
+      case 'has-organization':
+      default:
+        // El usuario tiene organización, mostrar el contenido normal
+        break;
+    }
   }
 
   return <>{children}</>;

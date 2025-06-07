@@ -116,6 +116,8 @@ function OrganizationProvider({ children }: OrganizationProviderProps) {
     
     try {
       setCheckingStatus(true);
+      setError(null); // Limpiar errores previos
+      
       const idToken = await user.getIdToken();
       const response = await fetch('/api/user/organization-status', {
         headers: {
@@ -123,21 +125,68 @@ function OrganizationProvider({ children }: OrganizationProviderProps) {
         }
       });
 
-      if (!response.ok) {
-        throw new Error('Error al verificar el estado de la organización');
-      }
-
-      const data = await response.json();
-      setOrganizationStatus(data);
-      
-      // Si el usuario tiene una organización, cargar las organizaciones
-      if (data.status === 'HAS_ORGANIZATION' && data.data?.organization) {
-        setOrganizations([data.data.organization]);
-        selectOrganization(data.data.organization.id);
+      // Manejar diferentes códigos de estado de manera robusta
+      if (response.ok) {
+        const data = await response.json();
+        setOrganizationStatus(data);
+        
+        // Si el usuario tiene una organización, cargar las organizaciones
+        if (data.status === 'HAS_ORGANIZATION' && data.data?.organization) {
+          setOrganizations([data.data.organization]);
+          selectOrganization(data.data.organization.id);
+        }
+      } else {
+        // Manejar respuestas no exitosas sin lanzar error
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { error: 'Error de comunicación con el servidor' };
+        }
+        
+        // Si es un error de autenticación (401), establecer estado sin organización
+        if (response.status === 401) {
+          setOrganizationStatus({
+            success: false,
+            status: 'NO_ORGANIZATION',
+            error: 'Usuario no autenticado',
+            code: 'AUTH_REQUIRED'
+          });
+        } else if (response.status === 404) {
+          // Usuario no encontrado en la base de datos
+          setOrganizationStatus({
+            success: false,
+            status: 'NO_ORGANIZATION',
+            error: 'Usuario no encontrado',
+            code: 'USER_NOT_FOUND'
+          });
+        } else {
+          // Otros errores del servidor
+          setOrganizationStatus({
+            success: false,
+            status: 'NO_ORGANIZATION',
+            error: errorData.error || 'Error del servidor',
+            code: errorData.code || 'SERVER_ERROR'
+          });
+        }
+        
+        console.warn('Error al verificar organización:', {
+          status: response.status,
+          error: errorData
+        });
       }
     } catch (error) {
-      console.error('Error al verificar organización:', error);
-      setError(error instanceof Error ? error.message : 'Error al verificar organización');
+      console.error('Error de red al verificar organización:', error);
+      
+      // En caso de error de red, establecer estado sin organización
+      setOrganizationStatus({
+        success: false,
+        status: 'NO_ORGANIZATION',
+        error: 'Error de conexión',
+        code: 'NETWORK_ERROR'
+      });
+      
+      setError('Error de conexión al verificar organización');
     } finally {
       setCheckingStatus(false);
     }
