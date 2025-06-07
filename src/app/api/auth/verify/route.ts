@@ -1,8 +1,60 @@
+/**
+ * @fileoverview API route para verificar tokens de Firebase
+ * @version 1.0.0
+ * @author Santiago Prada
+ * @date 2025-01-20
+ * 
+ * @description
+ * Esta API route proporciona endpoints para verificar tokens de Firebase Auth
+ * y obtener información del usuario autenticado.
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyFirebaseToken } from '@/lib/firebase/admin';
 
-// Middleware para verificar tokens de Firebase
-export async function POST(request: NextRequest) {
+/**
+ * Interface para la respuesta de verificación de token
+ * @interface TokenVerificationResponse
+ */
+interface TokenVerificationResponse {
+  uid?: string;
+  email?: string;
+  emailVerified?: boolean;
+  displayName?: string;
+  photoURL?: string;
+  error?: string;
+  details?: string;
+}
+
+/**
+ * POST /api/auth/verify
+ * Verifica un token de Firebase Auth y retorna la información del usuario
+ * 
+ * @param {NextRequest} request - Request object de Next.js
+ * @returns {Promise<NextResponse<TokenVerificationResponse>>} Información del usuario o error
+ * 
+ * @example
+ * // Request
+ * POST /api/auth/verify
+ * Headers: {
+ *   "Authorization": "Bearer <firebase_token>"
+ * }
+ * 
+ * // Response (200)
+ * {
+ *   "uid": "firebase_user_id",
+ *   "email": "user@example.com",
+ *   "emailVerified": true,
+ *   "displayName": "User Name",
+ *   "photoURL": "https://example.com/photo.jpg"
+ * }
+ * 
+ * // Response (401)
+ * {
+ *   "error": "Token inválido o expirado",
+ *   "details": "Error message"
+ * }
+ */
+export async function POST(request: NextRequest): Promise<NextResponse<TokenVerificationResponse>> {
   try {
     // Obtener el token del encabezado de autorización
     const authHeader = request.headers.get('Authorization');
@@ -51,10 +103,33 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Método GET para verificar que la ruta existe
-export async function GET() {
-  return NextResponse.json(
-    { message: 'Ruta de verificación de autenticación disponible. Usa POST para verificar tokens.' },
-    { status: 200 }
-  );
+/**
+ * GET /api/auth/verify
+ * Endpoint de verificación de disponibilidad de la API
+ * 
+ * @returns {NextResponse} Información sobre el endpoint de verificación
+ * 
+ * @example
+ * // Request
+ * GET /api/auth/verify
+ * 
+ * // Response (200)
+ * {
+ *   "message": "API de verificación de tokens disponible",
+ *   "endpoint": "/api/auth/verify",
+ *   "method": "POST",
+ *   "headers": {
+ *     "Authorization": "Bearer <firebase_token>"
+ *   }
+ * }
+ */
+export async function GET(): Promise<NextResponse> {
+  return NextResponse.json({
+    message: 'API de verificación de tokens disponible',
+    endpoint: '/api/auth/verify',
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer <firebase_token>'
+    }
+  });
 }

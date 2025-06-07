@@ -1,3 +1,13 @@
+/**
+ * @fileoverview API route para gestionar invitaciones de organizaciones
+ * @version 1.0.0
+ * @author Santiago Prada
+ * @date 2025-01-20
+ * 
+ * @description
+ * Esta API route maneja las invitaciones de organizaciones, permitiendo a los usuarios
+ * autenticados obtener sus invitaciones pendientes y crear nuevas invitaciones.
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-utils';
 import { db } from '@/db';
@@ -5,8 +15,59 @@ import { organizationInvitations, users } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import crypto from 'crypto';
 
-// GET /api/organizations/invitations - Obtener invitaciones pendientes para el usuario actual
-export async function GET(request: NextRequest) {
+/**
+ * Interface para invitación formateada
+ * @interface FormattedInvitation
+ */
+interface FormattedInvitation {
+  id: number;
+  organizationId: number;
+  organizationName: string;
+  inviterEmail: string;
+  invitedEmail: string;
+  status: string;
+  createdAt: string;
+}
+
+/**
+ * Interface para la respuesta de invitaciones
+ * @interface InvitationsResponse
+ */
+interface InvitationsResponse {
+  invitations?: FormattedInvitation[];
+  error?: string;
+}
+
+/**
+ * GET /api/organizations/invitations
+ * Obtiene las invitaciones pendientes para el usuario autenticado
+ * 
+ * @param {NextRequest} request - Request object de Next.js
+ * @returns {Promise<NextResponse<InvitationsResponse>>} Lista de invitaciones pendientes
+ * 
+ * @example
+ * // Request
+ * GET /api/organizations/invitations
+ * Headers: {
+ *   "Authorization": "Bearer <firebase_token>"
+ * }
+ * 
+ * // Response (200)
+ * {
+ *   "invitations": [
+ *     {
+ *       "id": 1,
+ *       "organizationId": 1,
+ *       "organizationName": "Mi Organización",
+ *       "inviterEmail": "admin@example.com",
+ *       "invitedEmail": "user@example.com",
+ *       "status": "pending",
+ *       "createdAt": "2025-01-20T10:00:00.000Z"
+ *     }
+ *   ]
+ * }
+ */
+export async function GET(request: NextRequest): Promise<NextResponse<InvitationsResponse>> {
   try {
     // Obtener usuario autenticado
     const user = await getAuthenticatedUser(request);
@@ -47,8 +108,70 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/organizations/invitations - Crear una nueva invitación
-export async function POST(request: NextRequest) {
+/**
+ * Interface para el request de crear invitación
+ * @interface CreateInvitationRequest
+ */
+interface CreateInvitationRequest {
+  email: string;
+  role?: string;
+}
+
+/**
+ * Interface para la respuesta de crear invitación
+ * @interface CreateInvitationResponse
+ */
+interface CreateInvitationResponse {
+  success?: boolean;
+  message?: string;
+  invitation?: {
+    id: number;
+    token: string;
+    expiresAt: Date;
+  };
+  error?: string;
+}
+
+/**
+ * POST /api/organizations/invitations
+ * Crea una nueva invitación para unirse a la organización del usuario
+ * 
+ * @param {NextRequest} request - Request object de Next.js
+ * @returns {Promise<NextResponse<CreateInvitationResponse>>} Resultado de la creación de invitación
+ * 
+ * @example
+ * // Request
+ * POST /api/organizations/invitations
+ * Headers: {
+ *   "Authorization": "Bearer <firebase_token>"
+ * }
+ * Body: {
+ *   "email": "user@example.com",
+ *   "role": "user"
+ * }
+ * 
+ * // Response (200) - Éxito
+ * {
+ *   "success": true,
+ *   "message": "Invitación creada exitosamente",
+ *   "invitation": {
+ *     "id": 1,
+ *     "token": "abc123...",
+ *     "expiresAt": "2025-01-27T10:00:00.000Z"
+ *   }
+ * }
+ * 
+ * // Response (400) - Usuario ya tiene organización
+ * {
+ *   "error": "El usuario ya pertenece a una organización"
+ * }
+ * 
+ * // Response (403) - Sin organización
+ * {
+ *   "error": "No perteneces a ninguna organización"
+ * }
+ */
+export async function POST(request: NextRequest): Promise<NextResponse<CreateInvitationResponse>> {
   try {
     // Obtener usuario autenticado
     const user = await getAuthenticatedUser(request);
@@ -65,7 +188,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Obtener datos de la invitación
-    const { email, role } = await request.json();
+    const { email, role }: CreateInvitationRequest = await request.json();
     
     if (!email) {
       return NextResponse.json(
@@ -132,19 +255,33 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Validar que el rol sea uno de los valores permitidos
+    const validRoles = ['admin', 'service_client', 'delivery'] as const;
+    type ValidRole = typeof validRoles[number];
+    const isValidRole = (role: string): role is ValidRole => validRoles.includes(role as ValidRole);
+    const assignedRole: ValidRole = (role && isValidRole(role)) ? role : 'service_client';
+    
     const [invitation] = await db.insert(organizationInvitations).values({
       organizationId: organizationIdNumber,
       invitedBy: dbUser.id,
       invitedEmail: email,
       invitationToken: invitationToken,
-      assignedRole: role || 'service_client' as const, // Usar el rol proporcionado o un valor por defecto
+      assignedRole: assignedRole,
       status: 'pending',
       expiresAt: expiresAt,
       createdAt: new Date(),
       updatedAt: new Date()
-    });
+    }).$returningId();
 
-    return NextResponse.json({ invitation }, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      message: 'Invitación creada exitosamente',
+      invitation: {
+        id: invitation.id,
+        token: invitationToken,
+        expiresAt: expiresAt
+      }
+    }, { status: 201 });
   } catch (error) {
     console.error('Error al crear invitación:', error);
     return NextResponse.json(
