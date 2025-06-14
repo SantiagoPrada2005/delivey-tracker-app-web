@@ -1,9 +1,7 @@
 "use client"
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
-import { useOrganizationFlow } from '@/contexts/organization-flow-context';
+import { useEffect } from 'react';
+import { useCreateOrganization } from '@/hooks/useCreateOrganization';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -56,12 +54,7 @@ const generateSlug = (text: string): string => {
 };
 
 export function CreateOrganizationForm() {
-  const { user } = useAuth();
-  const { refreshOrganizationStatus, completeFlow } = useOrganizationFlow();
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const { loading, error, success, createOrganization, clearError } = useCreateOrganization();
 
   // Configurar el formulario con react-hook-form y zod
   const form = useForm<FormData>({
@@ -85,51 +78,17 @@ export function CreateOrganizationForm() {
   }, [watchName, watchSlug, form]);
 
   const onSubmit = async (values: FormData) => {
-    setLoading(true);
-    setError(null);
-    setSuccess(false);
+    await createOrganization({
+      name: values.name,
+      description: values.description || undefined,
+      slug: values.slug,
+    });
+  };
 
-    try {
-      if (!user) {
-        throw new Error('Debes iniciar sesión para crear una organización');
-      }
-
-      const idToken = await user.getIdToken();
-      const response = await fetch('/api/organizations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({
-          name: values.name,
-          description: values.description || undefined,
-          slug: values.slug
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Error al crear la organización');
-      }
-
-      setSuccess(true);
-      
-      // Actualizar el estado de la organización y completar el flujo
-      await refreshOrganizationStatus();
-      completeFlow();
-      
-      // Redireccionar al dashboard después de un breve retraso
-      setTimeout(() => {
-        router.push('/');
-      }, 2000);
-
-    } catch (error) {
-      console.error('Error al crear organización:', error);
-      setError(error instanceof Error ? error.message : 'Error desconocido');
-    } finally {
-      setLoading(false);
+  // Limpiar error cuando el usuario empiece a escribir
+  const handleInputChange = () => {
+    if (error) {
+      clearError();
     }
   };
 
@@ -173,6 +132,10 @@ export function CreateOrganizationForm() {
                       placeholder="Mi Empresa"
                       disabled={loading || success}
                       {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        handleInputChange();
+                      }}
                     />
                   </FormControl>
                   <FormDescription>
@@ -194,6 +157,10 @@ export function CreateOrganizationForm() {
                       placeholder="mi-empresa"
                       disabled={loading || success}
                       {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        handleInputChange();
+                      }}
                     />
                   </FormControl>
                   <FormDescription>
@@ -216,6 +183,10 @@ export function CreateOrganizationForm() {
                       rows={3}
                       disabled={loading || success}
                       {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        handleInputChange();
+                      }}
                     />
                   </FormControl>
                   <FormDescription>

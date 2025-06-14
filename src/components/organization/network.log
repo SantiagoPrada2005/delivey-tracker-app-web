@@ -1,0 +1,32 @@
+// Headers client
+POST /api/organizations HTTP/1.1
+Accept: */*
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: en-US,en;q=0.9,es;q=0.8
+Connection: keep-alive
+Content-Length: 35
+Content-Type: application/json
+Cookie: firebaseToken=eyJhbGciOiJSUzI1NiIsImtpZCI6ImE0YTEwZGVjZTk4MzY2ZDZmNjNlMTY3Mjg2YWU5YjYxMWQyYmFhMjciLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiU0FOVElBR08gUFJBREEgTU9SRU5PIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FDZzhvY0lUdExQS3dUNzg5Q2dpNldPSVU3RVNReWgzcTQzR1RHZm5qemdtOFU2T05NWWxWZzg9czk2LWMiLCJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vZ2VzdG9yLXBlZGlkb3MtMTU3NjQiLCJhdWQiOiJnZXN0b3ItcGVkaWRvcy0xNTc2NCIsImF1dGhfdGltZSI6MTc0OTg3MjUxMCwidXNlcl9pZCI6IktkRGZZeDlzcXBQdUZvejYzUHlFRmhUNVpkZjEiLCJzdWIiOiJLZERmWXg5c3FwUHVGb3o2M1B5RUZoVDVaZGYxIiwiaWF0IjoxNzQ5ODcyNTEwLCJleHAiOjE3NDk4NzYxMTAsImVtYWlsIjoic3ByYWRhX3VzaXN0ZW1hc0BpbnRlcC5lZHUuY28iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJnb29nbGUuY29tIjpbIjExMTU5MTg0Mzk5MjExNTY1ODQ3NCJdLCJlbWFpbCI6WyJzcHJhZGFfdXNpc3RlbWFzQGludGVwLmVkdS5jbyJdfSwic2lnbl9pbl9wcm92aWRlciI6Imdvb2dsZS5jb20ifX0.cayTI3SBq8JQ8azemxs2X0Cow9g_V88GngeSwbvF3U06MHEP0XF3VqbwgUxDMHYipC351BRkZKxLoYEAFQk7gLJD5JVUAB4G7z9vTt23HDOGSY5ewuyoQs2yYGRnTAKAXHXAHLqh8_tzEGxIjozSh2zUNoXQ2GZcYNEffdRYCjAh6ciZhWvo0-gRGA3yl3Z7MJSIaDg641mxlMDhXUl1vLIPmTYFV-Zcriy85_gYE7_vJVxy7Kz8EaTu-2u3lqPutPpFhjSS8KsAEh_Ues_EozJEQ4eM427y74PMGd2WIHP6ENckIcFu5b2qloizMoxuFyX0DqLz4xxwdBOl0T-n-A; __next_hmr_refresh_hash__=30
+DNT: 1
+Host: localhost:3000
+Origin: http://localhost:3000
+Referer: http://localhost:3000/organization/create
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36
+sec-ch-ua: "Google Chrome";v="137", "Chromium";v="137", "Not/A)Brand";v="24"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "macOS"
+
+#Response headers
+HTTP/1.1 401 Unauthorized
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch
+content-type: application/json
+Date: Sat, 14 Jun 2025 04:34:32 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+#Response
+{"success":false,"error":"Usuario no autenticado","code":"AUTH_REQUIRED"}
