@@ -9,7 +9,6 @@ import { OrganizationLoading } from '@/components/organization/organization-load
 import { PendingInvitationsFlow } from '@/components/organization/pending-invitations-flow';
 import { PendingRequestsFlow } from '@/components/organization/pending-requests-flow';
 import { useOrganizationFlow } from '@/contexts/organization-flow-context';
-import { UserMenu } from '@/components/auth/user-menu';
 import { OrganizationErrorBoundary } from '@/components/error-boundary';
 
 // Rutas que no requieren verificación de organización
@@ -89,11 +88,6 @@ export function OrganizationCheck({ children }: OrganizationCheckProps) {
     console.log('⏳ OrganizationCheck - Mostrando loading');
     return (
       <div className="min-h-screen grid grid-rows-[auto_1fr] lg:grid-cols-[1fr_auto] lg:grid-rows-1 gap-4 p-4">
-        {user && (
-          <div className="order-1 lg:order-2 flex justify-end lg:justify-start lg:items-start">
-            <UserMenu />
-          </div>
-        )}
         <div className="order-2 lg:order-1 flex items-center justify-center">
           <OrganizationLoading />
         </div>
@@ -121,9 +115,6 @@ export function OrganizationCheck({ children }: OrganizationCheckProps) {
     const renderWithLayout = (content: React.ReactNode) => (
       <OrganizationErrorBoundary>
         <div className="min-h-screen grid grid-rows-[auto_1fr] lg:grid-cols-[1fr_auto] lg:grid-rows-1 gap-4 p-4">
-          <div className="order-1 lg:order-2 flex justify-end lg:justify-start lg:items-start">
-            <UserMenu />
-          </div>
           <div className="order-2 lg:order-1 flex items-center justify-center w-full">
             <div className="w-full max-w-4xl mx-auto">
               {content}
@@ -156,10 +147,7 @@ export function OrganizationCheck({ children }: OrganizationCheckProps) {
   if (user) {
     return (
       <div className="min-h-screen grid grid-rows-[auto_1fr] lg:grid-cols-[1fr_auto] lg:grid-rows-1 gap-4 p-4">
-        {/* Menú de usuario */}
-        <div className="order-1 lg:order-2 flex justify-end lg:justify-start lg:items-start">
-          <UserMenu />
-        </div>
+
         {/* Contenido principal */}
         <div className="order-2 lg:order-1 w-full">
           <div className="w-full max-w-7xl mx-auto">

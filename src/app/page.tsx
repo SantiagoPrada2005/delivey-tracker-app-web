@@ -1,7 +1,11 @@
+'use client';
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { UserAuthNav } from "@/components/user-auth-nav";
+import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import { 
   Package, 
@@ -16,6 +20,8 @@ import {
 } from "lucide-react";
 
 export default function LandingPage() {
+  const { isAuthenticated, loading } = useAuth();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -27,12 +33,7 @@ export default function LandingPage() {
               <span className="ml-2 text-xl font-bold">DeliveryTracker</span>
             </div>
             <div className="flex items-center space-x-4">
-              <Link href="/auth/login">
-                <Button variant="ghost">Iniciar Sesión</Button>
-              </Link>
-              <Link href="/auth/register">
-                <Button>Comenzar Gratis</Button>
-              </Link>
+              <UserAuthNav />
             </div>
           </div>
         </div>
@@ -52,17 +53,39 @@ export default function LandingPage() {
             DeliveryTracker es la solución completa para administrar pedidos, repartidores y clientes. 
             Optimiza tus operaciones de entrega con análisis en tiempo real y herramientas avanzadas.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/register">
-              <Button size="lg" className="w-full sm:w-auto">
-                Comenzar Prueba Gratuita
-                <ArrowRight className="ml-2 h-4 w-4" />
+          
+          {/* Mostrar diferentes CTAs según el estado de autenticación */}
+          {loading ? (
+            <div className="flex justify-center">
+              <div className="h-10 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            </div>
+          ) : isAuthenticated ? (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/dashboard">
+                <Button size="lg" className="w-full sm:w-auto">
+                  Ir al Dashboard
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/pedidos">
+                <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                  Gestionar Pedidos
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/auth/register">
+                <Button size="lg" className="w-full sm:w-auto">
+                  Comenzar Prueba Gratuita
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+              <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                Ver Demo
               </Button>
-            </Link>
-            <Button variant="outline" size="lg" className="w-full sm:w-auto">
-              Ver Demo
-            </Button>
-          </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -312,23 +335,49 @@ export default function LandingPage() {
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-primary text-primary-foreground">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            ¿Listo para optimizar tus entregas?
-          </h2>
-          <p className="text-xl mb-8 opacity-90">
-            Únete a cientos de empresas que ya confían en DeliveryTracker para gestionar sus operaciones de entrega
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/register">
-              <Button size="lg" variant="secondary" className="w-full sm:w-auto">
-                Comenzar Prueba Gratuita
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-            <Button size="lg" variant="outline" className="w-full sm:w-auto border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
-              Contactar Ventas
-            </Button>
-          </div>
+          {isAuthenticated ? (
+            <>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                ¡Bienvenido de vuelta!
+              </h2>
+              <p className="text-xl mb-8 opacity-90">
+                Continúa gestionando tus entregas de manera eficiente con todas las herramientas disponibles
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/dashboard">
+                  <Button size="lg" variant="secondary" className="w-full sm:w-auto">
+                    Ver Dashboard
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/pedidos/nuevo">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+                    Crear Nuevo Pedido
+                  </Button>
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                ¿Listo para optimizar tus entregas?
+              </h2>
+              <p className="text-xl mb-8 opacity-90">
+                Únete a cientos de empresas que ya confían en DeliveryTracker para gestionar sus operaciones de entrega
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/auth/register">
+                  <Button size="lg" variant="secondary" className="w-full sm:w-auto">
+                    Comenzar Prueba Gratuita
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+                <Button size="lg" variant="outline" className="w-full sm:w-auto border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+                  Contactar Ventas
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </section>
 
