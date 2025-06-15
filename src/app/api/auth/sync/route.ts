@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyFirebaseToken } from '@/lib/firebase/admin';
+import { verifyFirebaseToken, setCustomUserClaims } from '@/lib/firebase/admin';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
@@ -178,6 +178,32 @@ export async function POST(request: NextRequest): Promise<NextResponse<SyncUserR
       user = updatedUser;
       
       console.log(`[Auth Sync] Usuario actualizado: ${body.email} (${body.firebaseUid})`);
+    }
+
+    // Actualizar custom claims de Firebase con la información actual de la base de datos
+    if (user.organizationId && user.role !== 'N/A') {
+      const claimsUpdated = await setCustomUserClaims(body.firebaseUid, {
+        organizationId: user.organizationId,
+        role: user.role
+      });
+
+      if (!claimsUpdated) {
+        console.warn(`[Auth Sync] No se pudieron actualizar los claims para el usuario ${body.firebaseUid}`);
+      } else {
+        console.log(`[Auth Sync] Claims sincronizados para usuario ${body.firebaseUid}: organizationId=${user.organizationId}, role=${user.role}`);
+      }
+    } else {
+      // Si el usuario no tiene organización o rol válido, limpiar los claims
+      const claimsUpdated = await setCustomUserClaims(body.firebaseUid, {
+        organizationId: null,
+        role: null
+      });
+
+      if (!claimsUpdated) {
+        console.warn(`[Auth Sync] No se pudieron limpiar los claims para el usuario ${body.firebaseUid}`);
+      } else {
+        console.log(`[Auth Sync] Claims limpiados para usuario ${body.firebaseUid} (sin organización)`);
+      }
     }
 
     return NextResponse.json({

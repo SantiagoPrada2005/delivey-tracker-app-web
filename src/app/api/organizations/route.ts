@@ -15,6 +15,7 @@ import { db } from '@/db';
 import { organizations, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { getAllOrganizations } from '@/lib/database';
+import { setCustomUserClaims } from '@/lib/firebase/admin';
 
 interface CreateOrganizationRequest {
   name: string;
@@ -163,6 +164,18 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreateOrg
         updatedAt: new Date()
       })
       .where(eq(users.firebaseUid, user.uid));
+
+    // Actualizar los custom claims de Firebase
+    const claimsUpdated = await setCustomUserClaims(user.uid, {
+      organizationId: newOrganization.id,
+      role: 'admin'
+    });
+
+    if (!claimsUpdated) {
+      console.warn(`[Organizations] No se pudieron actualizar los claims para el usuario ${user.uid}`);
+    } else {
+      console.log(`[Organizations] Claims actualizados para usuario ${user.uid}: organizationId=${newOrganization.id}, role=admin`);
+    }
 
     console.log(`[Organizations] Nueva organización creada: ${newOrganization.name} por ${user.email}`);
 

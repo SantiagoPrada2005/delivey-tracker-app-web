@@ -13,6 +13,7 @@ import { getAuthenticatedUser } from '@/lib/auth-utils';
 import { db } from '@/db';
 import { organizationInvitations, users } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { setCustomUserClaims } from '@/lib/firebase/admin';
 
 /**
  * Interface for invitation response request body
@@ -135,12 +136,25 @@ export async function PUT(
 
     // Si se acepta la invitación, actualizar la organización del usuario
     if (action === 'accept') {
+      // Actualizar la base de datos
       await db.update(users)
         .set({
           organizationId: invitation.organizationId,
           updatedAt: new Date()
         })
         .where(eq(users.firebaseUid, user.uid));
+
+      // Actualizar los custom claims de Firebase
+      const claimsUpdated = await setCustomUserClaims(user.uid, {
+        organizationId: invitation.organizationId,
+        role: invitation.assignedRole || 'member'
+      });
+
+      if (!claimsUpdated) {
+        console.warn(`[Invitations] No se pudieron actualizar los claims para el usuario ${user.uid}`);
+      } else {
+        console.log(`[Invitations] Claims actualizados para usuario ${user.uid}: organizationId=${invitation.organizationId}, role=${invitation.assignedRole || 'member'}`);
+      }
 
       return NextResponse.json({
         message: 'Invitación aceptada correctamente',
