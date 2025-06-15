@@ -1,8 +1,23 @@
 'use client'
 
 import { useState } from "react";
-import { AppSidebar } from "@/components/dashboard/app-sidebar";
-import { MobileSidebar } from "@/components/mobile-sidebar";
+import { 
+  Sidebar, 
+  SidebarContent, 
+  SidebarGroup, 
+  SidebarGroupContent, 
+  SidebarGroupLabel, 
+  SidebarMenu, 
+  SidebarMenuButton, 
+  SidebarMenuItem, 
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+  SidebarHeader,
+  SidebarFooter
+} from "@/components/ui/sidebar";
+import { ThemeSwitcher } from "@/components/theme-switcher";
+import { UserAuthNav } from "@/components/user-auth-nav";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,7 +43,12 @@ import {
   BarChart3,
   FileText,
   Lock,
-  Unlock
+  Unlock,
+  Home,
+  ShoppingBag,
+  Truck,
+  Bell,
+  Package
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -216,21 +236,103 @@ export default function AdminPage() {
   const contarUsuariosPorEstado = (estado: string) => usuarios.filter(u => u.estado === estado).length;
   const contarLogsPorNivel = (nivel: string) => logs.filter(l => l.nivel === nivel).length;
 
+  // Definir los elementos del menú principal
+  const mainMenuItems = [
+    { title: "Dashboard", url: "/dashboard", icon: Home },
+    { title: "Pedidos", url: "/pedidos", icon: Package, badge: 25 },
+    { title: "Clientes", url: "/clientes", icon: Users },
+    { title: "Productos", url: "/productos", icon: ShoppingBag },
+    { title: "Repartidores", url: "/repartidores", icon: Truck },
+    { title: "Administración", url: "/admin", icon: Shield },
+    { title: "Configuración", url: "/configuracion", icon: Settings },
+  ];
+
+  // Definir los elementos del menú de notificaciones
+  const notificationItems = [
+    { title: "Nuevos pedidos", url: "/notificaciones/pedidos", count: 5 },
+    { title: "Alertas de stock", url: "/notificaciones/stock", count: 3 },
+    { title: "Mensajes", url: "/notificaciones/mensajes", count: 2 },
+  ];
+
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Sidebar para desktop */}
-      <div className="hidden lg:block">
-        <AppSidebar />
-      </div>
-
-      {/* Contenido principal */}
-      <div className="flex-1">
-        {/* Header móvil */}
-        <header className="lg:hidden flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">
-          <MobileSidebar />
-          <h1 className="font-semibold text-lg">Administración</h1>
+    <SidebarProvider>
+      <Sidebar>
+        <SidebarHeader className="border-b px-6 py-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Shield className="h-4 w-4" />
+            </div>
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-semibold">Delivery Tracker</span>
+              <span className="truncate text-xs text-muted-foreground">Panel de administración</span>
+            </div>
+          </div>
+        </SidebarHeader>
+        
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>Menú Principal</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {mainMenuItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <a href={item.url} className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                        {item.badge && (
+                          <Badge variant="secondary" className="ml-auto">
+                            {item.badge}
+                          </Badge>
+                        )}
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          
+          <SidebarGroup>
+            <SidebarGroupLabel>Notificaciones</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {notificationItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <a href={item.url} className="flex items-center gap-2">
+                        <Bell className="h-4 w-4" />
+                        <span>{item.title}</span>
+                        {item.count > 0 && (
+                          <Badge variant="destructive" className="ml-auto">
+                            {item.count}
+                          </Badge>
+                        )}
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+        
+        <SidebarFooter className="border-t p-4">
+          <div className="flex items-center justify-between">
+            <UserAuthNav />
+            <ThemeSwitcher />
+          </div>
+        </SidebarFooter>
+      </Sidebar>
+      
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-semibold">Administración</h1>
+          </div>
         </header>
-
+        
         {/* Contenido de la página */}
         <main className="flex-1 space-y-6 p-4 sm:p-6 lg:p-8">
           {/* Header */}
@@ -759,7 +861,7 @@ export default function AdminPage() {
             </TabsContent>
           </Tabs>
         </main>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

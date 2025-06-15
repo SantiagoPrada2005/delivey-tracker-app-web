@@ -1,16 +1,31 @@
 'use client'
 
 import { useState } from "react";
-import { AppSidebar } from "@/components/dashboard/app-sidebar";
-import { MobileSidebar } from "@/components/mobile-sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MessageSquare, Search, Filter, Clock, User, ArrowLeft, Mail, Phone, Star } from "lucide-react";
+import { MessageSquare, Search, Filter, Clock, User, ArrowLeft, Mail, Phone, Star, Home, Package, Users, Settings, BarChart3, Truck } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { ThemeSwitcher } from "@/components/theme-switcher";
+import { UserAuthNav } from "@/components/user-auth-nav";
 
 // Datos de ejemplo para notificaciones de mensajes
 const notificacionesMensajes = [
@@ -346,23 +361,146 @@ export default function NotificacionesMensajesPage() {
   const contarNoLeidas = () => mensajes.filter(m => !m.leida).length;
   const contarPorTipo = (tipo: string) => mensajes.filter(m => m.tipo === tipo).length;
 
+  // Elementos del menú principal
+  const menuItems = [
+    {
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: Home,
+    },
+    {
+      title: "Pedidos",
+      url: "/pedidos",
+      icon: Package,
+    },
+    {
+      title: "Clientes",
+      url: "/clientes",
+      icon: Users,
+    },
+    {
+      title: "Productos",
+      url: "/productos",
+      icon: Package,
+    },
+    {
+      title: "Repartidores",
+      url: "/repartidores",
+      icon: Truck,
+    },
+    {
+      title: "Configuración",
+      url: "/configuracion",
+      icon: Settings,
+    },
+  ];
+
+  // Elementos del menú de notificaciones
+  const notificationItems = [
+    {
+      title: "Pedidos",
+      url: "/notificaciones/pedidos",
+      icon: Package,
+      badge: "3",
+    },
+    {
+      title: "Stock",
+      url: "/notificaciones/stock",
+      icon: BarChart3,
+      badge: "2",
+    },
+    {
+      title: "Mensajes",
+      url: "/notificaciones/mensajes",
+      icon: MessageSquare,
+      badge: "5",
+    },
+  ];
+
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Sidebar para desktop */}
-      <div className="hidden lg:block">
-        <AppSidebar />
-      </div>
-
-      {/* Contenido principal */}
-      <div className="flex-1">
-        {/* Header móvil */}
-        <header className="lg:hidden flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">
-          <MobileSidebar />
-          <h1 className="font-semibold text-lg">Mensajes</h1>
+    <SidebarProvider>
+      <Sidebar>
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" asChild>
+                <Link href="/dashboard">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                    <Package className="size-4" />
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">DeliveryTracker</span>
+                    <span className="truncate text-xs">Gestión de entregas</span>
+                  </div>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>Navegación Principal</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {menuItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <Link href={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          <SidebarGroup>
+            <SidebarGroupLabel>Notificaciones</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {notificationItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <Link href={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                        {item.badge && (
+                          <Badge variant="secondary" className="ml-auto">
+                            {item.badge}
+                          </Badge>
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <UserAuthNav />
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <ThemeSwitcher />
+            </SidebarMenuItem>
+          </SidebarMenu>
+          <div className="px-4 py-2 text-xs text-muted-foreground">
+            © 2023 DeliveryTracker. Todos los derechos reservados.
+          </div>
+        </SidebarFooter>
+      </Sidebar>
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+          <div className="flex items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <h1 className="text-xl font-semibold">Mensajes de Clientes</h1>
+          </div>
         </header>
-
-        {/* Contenido de la página */}
-        <main className="flex-1 space-y-6 p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <main className="flex-1 space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -561,7 +699,8 @@ export default function NotificacionesMensajesPage() {
             )}
           </div>
         </main>
-      </div>
-    </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
