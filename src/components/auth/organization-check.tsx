@@ -10,9 +10,10 @@ import { PendingInvitationsFlow } from '@/components/organization/pending-invita
 import { PendingRequestsFlow } from '@/components/organization/pending-requests-flow';
 import { useOrganizationFlow } from '@/contexts/organization-flow-context';
 import { UserMenu } from '@/components/auth/user-menu';
+import { OrganizationErrorBoundary } from '@/components/error-boundary';
 
 // Rutas que no requieren verificación de organización
-const exemptRoutes = [
+const EXEMPT_ROUTES = [
   '/landing',
   '/auth/login',
   '/auth/register',
@@ -44,14 +45,14 @@ export function OrganizationCheck({ children }: OrganizationCheckProps) {
     isFlowActive,
     pathname,
     hasChecked,
-    isExemptRoute: exemptRoutes.some(route => pathname.startsWith(route)),
-    exemptRoutes,
-    matchingExemptRoute: exemptRoutes.find(route => pathname.startsWith(route))
+    isExemptRoute: EXEMPT_ROUTES.some(route => pathname.startsWith(route)),
+    exemptRoutes: EXEMPT_ROUTES,
+    matchingExemptRoute: EXEMPT_ROUTES.find(route => pathname.startsWith(route))
   });
 
   useEffect(() => {
     // Si la ruta está exenta, no hacer nada
-    if (exemptRoutes.some(route => pathname.startsWith(route))) {
+    if (EXEMPT_ROUTES.some(route => pathname.startsWith(route))) {
       console.log('📍 OrganizationCheck - Ruta exenta, no verificar organización');
       setIsInitialLoad(false);
       return;
@@ -80,8 +81,11 @@ export function OrganizationCheck({ children }: OrganizationCheckProps) {
     }
   }, [user]);
 
+  // Verificar si la ruta actual está exenta
+  const isExemptRoute = EXEMPT_ROUTES.some(route => pathname.startsWith(route));
+
   // Mostrar loading durante la carga inicial o mientras se verifica la organización
-  if (isInitialLoad || (user && !authLoading && checkingStatus && !exemptRoutes.some(route => pathname.startsWith(route)))) {
+  if (isInitialLoad || (user && !authLoading && checkingStatus && !isExemptRoute)) {
     console.log('⏳ OrganizationCheck - Mostrando loading');
     return (
       <div className="min-h-screen grid grid-rows-[auto_1fr] lg:grid-cols-[1fr_auto] lg:grid-rows-1 gap-4 p-4">
@@ -99,70 +103,54 @@ export function OrganizationCheck({ children }: OrganizationCheckProps) {
 
   // Si no hay usuario autenticado y no estamos en una ruta exenta, no mostrar nada
   // (la redirección ya se maneja en el useEffect)
-  if (!user && !exemptRoutes.some(route => pathname.startsWith(route))) {
+  if (!user && !isExemptRoute) {
     console.log('👤 OrganizationCheck - Sin usuario en ruta protegida, esperando redirección');
     return <OrganizationLoading />;
   }
 
   // Si no hay usuario autenticado pero estamos en una ruta exenta, mostrar el contenido
-  if (!user && exemptRoutes.some(route => pathname.startsWith(route))) {
+  if (!user && isExemptRoute) {
     console.log('👤 OrganizationCheck - Sin usuario en ruta exenta, mostrando children');
     return <>{children}</>;
   }
 
-  // Mostrar los flujos apropiados según el estado de la organización
-  // Esto incluye el caso donde se recibe un 401 con estado NO_ORGANIZATION
-  if (user && !authLoading && isFlowActive && !exemptRoutes.some(route => pathname.startsWith(route))) {
-    console.log('🎯 OrganizationCheck - Evaluando flujo activo, currentStep:', currentStep);
+  // Renderizar flujos de organización para usuarios autenticados en rutas no exentas
+  if (user && !authLoading && isFlowActive && !isExemptRoute) {
+    console.log('🎯 OrganizationCheck - Flujo activo:', currentStep);
     
-    const renderWithUserMenu = (content: React.ReactNode) => (
-      <div className="min-h-screen grid grid-rows-[auto_1fr] lg:grid-cols-[1fr_auto] lg:grid-rows-1 gap-4 p-4">
-        {/* Menú de usuario */}
-        <div className="order-1 lg:order-2 flex justify-end lg:justify-start lg:items-start">
-          <UserMenu />
-        </div>
-        {/* Contenido principal */}
-        <div className="order-2 lg:order-1 flex items-center justify-center w-full">
-          <div className="w-full max-w-4xl mx-auto">
-            {content}
+    const renderWithLayout = (content: React.ReactNode) => (
+      <OrganizationErrorBoundary>
+        <div className="min-h-screen grid grid-rows-[auto_1fr] lg:grid-cols-[1fr_auto] lg:grid-rows-1 gap-4 p-4">
+          <div className="order-1 lg:order-2 flex justify-end lg:justify-start lg:items-start">
+            <UserMenu />
+          </div>
+          <div className="order-2 lg:order-1 flex items-center justify-center w-full">
+            <div className="w-full max-w-4xl mx-auto">
+              {content}
+            </div>
           </div>
         </div>
-      </div>
+      </OrganizationErrorBoundary>
     );
     
     switch (currentStep) {
       case 'no-organization':
-        console.log('🚫 OrganizationCheck - Renderizando NoOrganizationFlow');
-        // Renderizar NoOrganizationFlow cuando:
-        // - El usuario no tiene organización
-        // - Se recibe error 401 con estado NO_ORGANIZATION
-        // - Cualquier otro caso que resulte en estado NO_ORGANIZATION
-        return renderWithUserMenu(<NoOrganizationFlow />);
+        return renderWithLayout(<NoOrganizationFlow />);
       case 'pending-invitation':
-        console.log('📧 OrganizationCheck - Renderizando PendingInvitationsFlow');
-        return renderWithUserMenu(<PendingInvitationsFlow />);
+        return renderWithLayout(<PendingInvitationsFlow />);
       case 'pending-request':
-        console.log('📝 OrganizationCheck - Renderizando PendingRequestsFlow');
-        return renderWithUserMenu(<PendingRequestsFlow />);
+        return renderWithLayout(<PendingRequestsFlow />);
       case 'loading':
-        console.log('⏳ OrganizationCheck - Renderizando OrganizationLoading (desde switch)');
-        return renderWithUserMenu(<OrganizationLoading />);
+        return renderWithLayout(<OrganizationLoading />);
       case 'has-organization':
-      default:
-        console.log('✅ OrganizationCheck - Usuario tiene organización, mostrando children');
-        // El usuario tiene organización, mostrar el contenido normal
+        // Usuario tiene organización, continuar al contenido normal
         break;
+      default:
+        return renderWithLayout(<OrganizationLoading />);
     }
-  } else {
-    console.log('🔄 OrganizationCheck - Condiciones no cumplidas para flujo activo:', {
-      hasUser: !!user,
-      authLoading,
-      isFlowActive,
-      isExemptRoute: exemptRoutes.some(route => pathname.startsWith(route))
-    });
   }
 
-  console.log('📄 OrganizationCheck - Mostrando children por defecto');
+  console.log('📄 OrganizationCheck - Renderizando contenido normal');
   
   // Si hay usuario autenticado, mostrar el layout con el menú de usuario
   if (user) {

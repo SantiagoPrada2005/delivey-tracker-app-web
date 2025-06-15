@@ -65,7 +65,7 @@ import {
 } from "@/components/ui/alert-dialog";
 // import { toast } from "@/hooks/use-toast";
 // Función temporal para toast hasta que se implemente correctamente
-const toast = ({ title, description, variant }: { title?: string; description?: string; variant?: string }) => {
+const toast = ({ title, description }: { title?: string; description?: string; variant?: string }) => {
   console.log(`Toast: ${title} - ${description}`);
 };
 
@@ -179,7 +179,7 @@ export default function PedidosPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [estadisticas, setEstadisticas] = useState<EstadisticasEntrega | null>(null);
+  // const [estadisticas, setEstadisticas] = useState<EstadisticasEntrega | null>(null);
 
   // Estados para el formulario
   const [formData, setFormData] = useState({
@@ -194,7 +194,7 @@ export default function PedidosPage() {
     loadPedidos();
     loadClientes();
     loadProductos();
-    loadEstadisticas();
+    // loadEstadisticas();
   }, []);
 
   const loadPedidos = async () => {
@@ -240,17 +240,17 @@ export default function PedidosPage() {
     }
   };
 
-  const loadEstadisticas = async () => {
-    try {
-      const response = await fetch('/api/pedidos/estadisticas');
-      const data = await response.json();
-      if (data.success) {
-        setEstadisticas(data.estadisticas);
-      }
-    } catch (error) {
-      console.error('Error loading estadísticas:', error);
-    }
-  };
+  // const loadEstadisticas = async () => {
+  //   try {
+  //     const response = await fetch('/api/pedidos/estadisticas');
+  //     const data = await response.json();
+  //     if (data.success) {
+  //       setEstadisticas(data.estadisticas);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error loading estadísticas:', error);
+  //   }
+  // };
 
   const handleCreatePedido = async () => {
     try {
@@ -403,7 +403,7 @@ export default function PedidosPage() {
     }));
   };
 
-  const updateDetalle = (index: number, field: string, value: any) => {
+  const updateDetalle = (index: number, field: string, value: string | number) => {
     setFormData(prev => ({
       ...prev,
       detalles: prev.detalles.map((detalle, i) => 

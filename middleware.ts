@@ -1,20 +1,3 @@
-/**
- * @fileoverview Middleware de Next.js para autenticación y autorización
- * @version 2.0.0
- * @author Santiago Prada
- * @date 2025-06-06
- * 
- * @description
- * Middleware robusto que maneja:
- * - Autenticación con Firebase
- * - Verificación de estado de organización
- * - Redirecciones inteligentes
- * - Protección de rutas API y páginas
- * - Manejo de errores y casos edge
- * 
- * Diseñado siguiendo las mejores prácticas de Next.js 14+ App Router
- */
-
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyFirebaseToken } from '@/lib/firebase/admin';
 
@@ -23,49 +6,25 @@ import { verifyFirebaseToken } from '@/lib/firebase/admin';
 // ============================================================================
 
 /**
- * Rutas completamente públicas que no requieren autenticación
+ * Rutas públicas que no requieren autenticación
  */
 const PUBLIC_ROUTES = [
-  '/',
+  '/landing',
   '/auth/login',
   '/auth/register',
   '/auth/reset-password',
-  '/landing'
-] as const;
-
-/**
- * Rutas de API que requieren autenticación pero manejan errores internamente
- */
-const API_ROUTES = [
+  '/auth/verify-email',
+  '/auth/forgot-password',
   '/api/auth/verify',
-  '/api/auth/sync',
-  '/api/user/organization-status',
-  '/api/organizations',
-] as const;
-
-// Nota: Las rutas protegidas se manejan dinámicamente en la función middleware
-
-/**
- * Rutas relacionadas con la gestión de organizaciones
- */
-const ORGANIZATION_ROUTES = [
-  '/organization/create',
-  '/organization/invitations',
-  '/organization/requests',
 ] as const;
 
 /**
- * Rutas que no requieren verificación de estado de organización
- * (usuario autenticado pero puede no tener organización)
+ * Rutas de API que requieren autenticación
  */
-const ORGANIZATION_EXEMPT_ROUTES = [
-  ...PUBLIC_ROUTES,
-  ...API_ROUTES,
-  ...ORGANIZATION_ROUTES,
-] as const;
+//const API_ROUTES = ['/api'] as const;
 
 // ============================================================================
-// TIPOS Y INTERFACES
+// INTERFACES
 // ============================================================================
 
 interface AuthenticatedUser {
@@ -75,29 +34,12 @@ interface AuthenticatedUser {
   name?: string;
 }
 
-interface OrganizationStatus {
-  status: 'HAS_ORGANIZATION' | 'PENDING_INVITATION' | 'PENDING_REQUEST' | 'NO_ORGANIZATION';
-  data?: {
-    user: {
-      id: number;
-      email: string;
-      organizationId: number | null;
-      role: string;
-    };
-    organization?: {
-      id: number;
-      name: string;
-      slug: string;
-    };
-  };
-}
-
 // ============================================================================
-// UTILIDADES
+// FUNCIONES AUXILIARES
 // ============================================================================
 
 /**
- * Extrae el token de Firebase de cookies o headers
+ * Extrae el token de Firebase de la request
  */
 function extractFirebaseToken(request: NextRequest): string | null {
   // Prioridad 1: Cookie 'firebaseToken'
@@ -148,8 +90,8 @@ function createApiErrorResponse(message: string, code: string, status: number) {
 function createRedirectResponse(request: NextRequest, destination: string) {
   const url = new URL(destination, request.url);
   
-  // Solo agregar callbackUrl si no es una ruta de organización
-  if (!matchesRoute(destination, ORGANIZATION_ROUTES) && !matchesRoute(request.nextUrl.pathname, PUBLIC_ROUTES)) {
+  // Agregar callbackUrl para rutas protegidas
+  if (!matchesRoute(request.nextUrl.pathname, PUBLIC_ROUTES)) {
     url.searchParams.set('callbackUrl', encodeURIComponent(request.url));
   }
   
@@ -157,79 +99,16 @@ function createRedirectResponse(request: NextRequest, destination: string) {
 }
 
 /**
- * Verifica el estado de organización del usuario
- */
-async function checkOrganizationStatus(
-  request: NextRequest,
-  user: AuthenticatedUser,
-  token: string
-): Promise<OrganizationStatus | null> {
-  try {
-    const orgStatusUrl = new URL('/api/user/organization-status', request.url);
-    
-    const response = await fetch(orgStatusUrl, {
-      method: 'GET',
-      headers: {
-        'x-user-id': user.uid,
-        'x-user-email': user.email,
-        'x-user-name': user.name || '',
-        'x-user-verified': user.emailVerified.toString(),
-        'x-firebase-token': token,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      console.error(`Organization status check failed: ${response.status}`);
-      return null;
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error checking organization status:', error);
-    return null;
-  }
-}
-
-/**
- * Determina la redirección basada en el estado de organización
- */
-function getOrganizationRedirect(status: OrganizationStatus['status']): string | null {
-  switch (status) {
-    case 'PENDING_INVITATION':
-      return '/organization/invitations';
-    case 'PENDING_REQUEST':
-      return '/organization/requests';
-    case 'NO_ORGANIZATION':
-      // No redirigir automáticamente, permitir que el componente bloqueador se muestre
-      return null;
-    default:
-      return '/organization/create';
-  }
-}
-
-/**
  * Crea headers de usuario para pasar a las rutas
  */
-function createUserHeaders(user: AuthenticatedUser, token: string, organizationData?: { user: { organizationId: number | null; role: string; id: number } }) {
-  const headers: Record<string, string> = {
+function createUserHeaders(user: AuthenticatedUser, token: string) {
+  return {
     'x-user-id': user.uid,
     'x-user-email': user.email,
     'x-user-name': user.name || '',
     'x-user-verified': user.emailVerified.toString(),
     'x-firebase-token': token,
   };
-  
-  // Agregar información de organización si está disponible
-  if (organizationData?.user) {
-    if (organizationData.user.organizationId) {
-      headers['x-user-organization'] = organizationData.user.organizationId.toString();
-    }
-    headers['x-user-role'] = organizationData.user.role;
-    headers['x-user-db-id'] = organizationData.user.id.toString();
-  }
-  
-  return headers;
 }
 
 // ============================================================================
@@ -239,15 +118,13 @@ function createUserHeaders(user: AuthenticatedUser, token: string, organizationD
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  console.log(`[Middleware] Processing: ${pathname}`);
-  console.log(`[Middleware] Headers:`, Object.fromEntries(request.headers.entries()));
-  console.log(`[Middleware] Cookies:`, Object.fromEntries(request.cookies.getAll().map(c => [c.name, c.value])));
+  console.log(`[Auth Middleware] Processing: ${pathname}`);
 
   // ========================================
   // 1. RUTAS PÚBLICAS - Permitir sin verificación
   // ========================================
   if (matchesRoute(pathname, PUBLIC_ROUTES)) {
-    console.log(`[Middleware] Public route allowed: ${pathname}`);
+    console.log(`[Auth Middleware] Public route allowed: ${pathname}`);
     return NextResponse.next();
   }
 
@@ -257,7 +134,7 @@ export async function middleware(request: NextRequest) {
   const firebaseToken = extractFirebaseToken(request);
   
   if (!firebaseToken) {
-    console.log(`[Middleware] No token found for: ${pathname}`);
+    console.log(`[Auth Middleware] No token found for: ${pathname}`);
     
     // Para APIs, devolver error JSON
     if (pathname.startsWith('/api/')) {
@@ -279,12 +156,12 @@ export async function middleware(request: NextRequest) {
   try {
     decodedToken = await verifyFirebaseToken(firebaseToken);
   } catch (error) {
-    console.error(`[Middleware] Token verification error:`, error);
+    console.error(`[Auth Middleware] Token verification error:`, error);
     decodedToken = null;
   }
   
   if (!decodedToken) {
-    console.log(`[Middleware] Invalid token for: ${pathname}`);
+    console.log(`[Auth Middleware] Invalid token for: ${pathname}`);
     
     // Para APIs, devolver error JSON
     if (pathname.startsWith('/api/')) {
@@ -309,104 +186,17 @@ export async function middleware(request: NextRequest) {
     name: decodedToken.name,
   };
 
-  console.log(`[Middleware] Authenticated user: ${user.email}`);
+  console.log(`[Auth Middleware] Authenticated user: ${user.email}`);
 
   // ========================================
-  // 5. RUTAS QUE NO REQUIEREN ORGANIZACIÓN
+  // 5. PERMITIR ACCESO CON HEADERS DE USUARIO
   // ========================================
-  console.log(`[Middleware] Checking if ${pathname} matches exempt routes:`, ORGANIZATION_EXEMPT_ROUTES);
-  if (matchesRoute(pathname, ORGANIZATION_EXEMPT_ROUTES)) {
-    console.log(`[Middleware] Organization exempt route: ${pathname}`);
-    
-    const response = NextResponse.next();
-    
-    // Agregar headers básicos de usuario para todas las rutas exentas
-    Object.entries(createUserHeaders(user, firebaseToken)).forEach(([key, value]) => {
-      response.headers.set(key, value);
-    });
-    
-    return response;
-  }
-
-  // ========================================
-  // 6. VERIFICACIÓN DE ESTADO DE ORGANIZACIÓN
-  // ========================================
-  const organizationStatus = await checkOrganizationStatus(request, user, firebaseToken);
-  
-  if (!organizationStatus) {
-    console.log(`[Middleware] Failed to check organization status, redirecting to create`);
-    
-    // Si no podemos verificar el estado, redirigir a crear organización como fallback
-    if (pathname.startsWith('/api/')) {
-      return createApiErrorResponse(
-        'Error al verificar estado de organización',
-        'ORGANIZATION_CHECK_FAILED',
-        503
-      );
-    }
-    
-    return createRedirectResponse(request, '/organization/create');
-  }
-
-  // ========================================
-  // 7. LÓGICA DE REDIRECCIÓN BASADA EN ORGANIZACIÓN
-  // ========================================
-  if (organizationStatus.status !== 'HAS_ORGANIZATION') {
-    const redirectPath = getOrganizationRedirect(organizationStatus.status);
-    
-    console.log(`[Middleware] User needs organization setup: ${organizationStatus.status} -> ${redirectPath || 'allow blocking component'}`);
-    
-    // Si no hay redirectPath (caso NO_ORGANIZATION), permitir que la página se renderice
-    // para que el componente bloqueador pueda mostrarse
-    if (!redirectPath) {
-      console.log(`[Middleware] Allowing page render for blocking component: ${organizationStatus.status}`);
-      const response = NextResponse.next();
-      Object.entries(createUserHeaders(user, firebaseToken, organizationStatus.data ? { user: organizationStatus.data.user } : undefined)).forEach(([key, value]) => {
-        response.headers.set(key, value);
-      });
-      return response;
-    }
-    
-    // Si ya está en la ruta correcta, permitir continuar
-    if (pathname.startsWith(redirectPath)) {
-      const response = NextResponse.next();
-      Object.entries(createUserHeaders(user, firebaseToken, organizationStatus.data ? { user: organizationStatus.data.user } : undefined)).forEach(([key, value]) => {
-        response.headers.set(key, value);
-      });
-      return response;
-    }
-    
-    // Para APIs, devolver error específico
-    if (pathname.startsWith('/api/')) {
-      return createApiErrorResponse(
-        'Usuario requiere configuración de organización',
-        `ORGANIZATION_${organizationStatus.status}`,
-        403
-      );
-    }
-    
-    // Redirigir a la ruta apropiada
-    return createRedirectResponse(request, redirectPath);
-  }
-
-  // ========================================
-  // 8. USUARIO CON ORGANIZACIÓN - Permitir acceso
-  // ========================================
-  console.log(`[Middleware] User has organization, allowing access to: ${pathname}`);
-  
   const response = NextResponse.next();
   
-  // Agregar headers de usuario y organización
-  Object.entries(createUserHeaders(user, firebaseToken, organizationStatus.data ? { user: organizationStatus.data.user } : undefined)).forEach(([key, value]) => {
+  // Agregar headers de usuario para todas las rutas autenticadas
+  Object.entries(createUserHeaders(user, firebaseToken)).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
-  
-  // Agregar información de organización si está disponible
-  if (organizationStatus.data?.organization) {
-    response.headers.set('x-organization-id', organizationStatus.data.organization.id.toString());
-    response.headers.set('x-organization-name', organizationStatus.data.organization.name);
-    response.headers.set('x-organization-slug', organizationStatus.data.organization.slug);
-  }
   
   return response;
 }
