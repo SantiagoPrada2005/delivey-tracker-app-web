@@ -15,6 +15,7 @@ import {
 } from "@tanstack/react-table";
 import { ArrowUpDown, ChevronDown, Plus, Search, Filter, Edit, Trash2 } from "lucide-react";
 import { useProductos, Producto, ProductoFormData } from "@/hooks/useProductos";
+import { useCategorias } from "@/hooks/useCategorias";
 import { useState } from "react";
 import {
   Dialog,
@@ -68,22 +69,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { MobileSidebar } from "@/components/mobile-sidebar";
 
-// Categorías disponibles
-const CATEGORIAS = [
-  "Pizzas",
-  "Hamburguesas",
-  "Ensaladas",
-  "Pastas",
-  "Mexicana",
-  "Bebidas",
-  "Postres",
-  "Otros"
-];
+// Componente principal se moverá más abajo para usar los hooks
 
 // Definición de columnas
 const createColumns = (
   onEdit: (producto: Producto) => void,
-  onDelete: (producto: Producto) => void
+  onDelete: (producto: Producto) => void,
+  categorias: { id: number; nombre: string }[]
 ): ColumnDef<Producto>[] => [
   {
     accessorKey: "nombre",
@@ -103,7 +95,7 @@ const createColumns = (
     ),
   },
   {
-    accessorKey: "categoria",
+    accessorKey: "categoriaId",
     header: ({ column }) => {
       return (
         <Button
@@ -116,9 +108,10 @@ const createColumns = (
       );
     },
     cell: ({ row }) => {
-      const categoria = row.getValue("categoria") as string;
+      const categoriaId = row.getValue("categoriaId") as number;
+      const categoria = categorias.find(c => c.id === categoriaId);
       return categoria ? (
-        <Badge variant="outline">{categoria}</Badge>
+        <Badge variant="outline">{categoria.nombre}</Badge>
       ) : (
         <span className="text-muted-foreground">Sin categoría</span>
       );
@@ -378,18 +371,22 @@ export default function ProductsPage() {
     createProducto,
     updateProducto,
     deleteProducto,
-    fetchProductos
+    fetchProductos,
   } = useProductos();
 
-  // Estados para el diálogo de crear/editar
+  const {
+    categorias,
+  } = useCategorias();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProducto, setEditingProducto] = useState<Producto | null>(null);
   const [formData, setFormData] = useState<ProductoFormData>({
     nombre: '',
     descripcion: '',
     precio: '0',
+    costo: '0',
     stock: 0,
-    categoria: '',
+    categoriaId: null,
     imagen: ''
   });
 
@@ -400,8 +397,9 @@ export default function ProductsPage() {
       nombre: producto.nombre,
       descripcion: producto.descripcion || '',
       precio: producto.precio.toString(),
+      costo: producto.costo?.toString() || '0',
       stock: producto.stock,
-      categoria: producto.categoria || '',
+      categoriaId: producto.categoriaId || null,
       imagen: producto.imagen || ''
     });
     setIsDialogOpen(true);
@@ -444,6 +442,15 @@ export default function ProductsPage() {
       return;
     }
 
+    if (formData.costo && parseFloat(formData.costo) < 0) {
+      toast({
+        title: "Error",
+        description: "El costo no puede ser negativo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (formData.stock < 0) {
       toast({
         title: "Error",
@@ -474,8 +481,9 @@ export default function ProductsPage() {
         nombre: '',
         descripcion: '',
         precio: '0',
+        costo: '0',
         stock: 0,
-        categoria: '',
+        categoriaId: null,
         imagen: ''
       });
     } catch {
@@ -495,15 +503,16 @@ export default function ProductsPage() {
       nombre: '',
       descripcion: '',
       precio: '0',
+      costo: '0',
       stock: 0,
-      categoria: '',
+      categoriaId: null,
       imagen: ''
     });
     setIsDialogOpen(true);
     fetchProductos();
   };
 
-  const columns = createColumns(handleEdit, handleDelete);
+  const columns = createColumns(handleEdit, handleDelete, categorias);
 
   if (loading) {
     return (
@@ -615,6 +624,22 @@ export default function ProductsPage() {
                         />
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="costo" className="text-right">
+                          Costo
+                        </Label>
+                        <Input
+                          id="costo"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={formData.costo}
+                          onChange={(e) => setFormData({ ...formData, costo: e.target.value || '0' })}
+                          className="col-span-3"
+                          placeholder="0.00"
+                          required
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="stock" className="text-right">
                           Stock
                         </Label>
@@ -634,16 +659,16 @@ export default function ProductsPage() {
                           Categoría
                         </Label>
                         <Select
-                          value={formData.categoria}
-                          onValueChange={(value) => setFormData({ ...formData, categoria: value })}
+                          value={formData.categoriaId ? formData.categoriaId.toString() : ""}
+                          onValueChange={(value) => setFormData({ ...formData, categoriaId: value ? parseInt(value) : null })}
                         >
                           <SelectTrigger className="col-span-3">
                             <SelectValue placeholder="Selecciona una categoría" />
                           </SelectTrigger>
                           <SelectContent>
-                            {CATEGORIAS.map((categoria) => (
-                              <SelectItem key={categoria} value={categoria}>
-                                {categoria}
+                            {categorias.map((categoria) => (
+                              <SelectItem key={categoria.id} value={categoria.id.toString()}>
+                                {categoria.nombre}
                               </SelectItem>
                             ))}
                           </SelectContent>

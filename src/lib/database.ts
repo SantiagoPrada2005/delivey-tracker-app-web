@@ -2,6 +2,7 @@ import { db } from '@/db';
 import { 
   clientes, 
   productos, 
+  categoriaProducto,
   pedidos, 
   detallesPedido,
   repartidores, 
@@ -75,6 +76,36 @@ export async function updateProducto(id: number, productoData: Partial<typeof pr
 export async function deleteProducto(id: number, organizationId: number) {
   return await db.delete(productos)
     .where(and(eq(productos.id, id), eq(productos.organizationId, organizationId)));
+}
+
+// Funciones para Categorías de Productos
+export async function getCategoriasByOrganization(organizationId: number) {
+  return await db.select().from(categoriaProducto).where(eq(categoriaProducto.organizationId, organizationId));
+}
+
+export async function getCategoriaById(id: number, organizationId: number) {
+  return await db.select().from(categoriaProducto)
+    .where(and(eq(categoriaProducto.id, id), eq(categoriaProducto.organizationId, organizationId)))
+    .limit(1);
+}
+
+export async function createCategoria(categoriaData: Omit<typeof categoriaProducto.$inferInsert, 'organizationId'>, organizationId: number) {
+  const result = await db.insert(categoriaProducto).values({
+    ...categoriaData,
+    organizationId
+  }).$returningId();
+  return result[0];
+}
+
+export async function updateCategoria(id: number, categoriaData: Partial<typeof categoriaProducto.$inferInsert>, organizationId: number) {
+  return await db.update(categoriaProducto)
+    .set(categoriaData)
+    .where(and(eq(categoriaProducto.id, id), eq(categoriaProducto.organizationId, organizationId)));
+}
+
+export async function deleteCategoria(id: number, organizationId: number) {
+  return await db.delete(categoriaProducto)
+    .where(and(eq(categoriaProducto.id, id), eq(categoriaProducto.organizationId, organizationId)));
 }
 
 // Funciones para Pedidos

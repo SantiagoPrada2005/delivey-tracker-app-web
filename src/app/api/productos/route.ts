@@ -305,7 +305,7 @@ export async function PUT(request: NextRequest) {
     }
     
     if (body.categoria !== undefined) {
-      updateData.categoria = body.categoria?.trim() || null;
+      updateData.categoriaId = body.categoria?.trim() || null;
     }
     
     if (body.imagen !== undefined) {

@@ -125,7 +125,7 @@ export async function seed() {
       descripcion: 'Hamburguesa de carne de res con lechuga, tomate, cebolla y salsa especial',
       precio: '15000.00',
       stock: 50,
-      categoria: 'Hamburguesas',
+      categoriaId: 1, // Hamburguesas
       imagen: '/images/hamburguesa-clasica.jpg'
     }, org1Id);
 
@@ -134,7 +134,7 @@ export async function seed() {
       descripcion: 'Pizza tradicional con salsa de tomate, mozzarella fresca y albahaca',
       precio: '25000.00',
       stock: 30,
-      categoria: 'Pizzas',
+      categoriaId: 2, // Pizzas
       imagen: '/images/pizza-margherita.jpg'
     }, org1Id);
 
@@ -143,7 +143,7 @@ export async function seed() {
       descripcion: 'Lechuga romana, crutones, queso parmesano y aderezo césar',
       precio: '12000.00',
       stock: 25,
-      categoria: 'Ensaladas',
+      categoriaId: 3, // Ensaladas
       imagen: '/images/ensalada-cesar.jpg'
     }, org1Id);
 
@@ -152,7 +152,7 @@ export async function seed() {
       descripcion: 'Pizza con salsa de tomate, mozzarella y pepperoni',
       precio: '28000.00',
       stock: 20,
-      categoria: 'Pizzas',
+      categoriaId: 2, // Pizzas
       imagen: '/images/pizza-pepperoni.jpg'
     }, org2Id);
 
@@ -161,7 +161,7 @@ export async function seed() {
       descripcion: 'Lasaña tradicional con carne boloñesa y queso gratinado',
       precio: '22000.00',
       stock: 15,
-      categoria: 'Pastas',
+      categoriaId: 4, // Pastas
       imagen: '/images/lasana-bolonesa.jpg'
     }, org2Id);
 

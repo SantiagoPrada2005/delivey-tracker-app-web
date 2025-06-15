@@ -1,6 +1,7 @@
 // Exportar todas las entidades y relaciones
 export * from './clientes';
 export * from './productos';
+export * from './categoriaProducto';
 export * from './pedidos';
 export * from './detallesPedido';
 export * from './repartidores';

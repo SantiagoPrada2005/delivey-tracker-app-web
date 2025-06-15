@@ -19,8 +19,9 @@ export interface Producto {
   nombre: string;
   descripcion?: string;
   precio: string;
+  costo?: string;
   stock: number;
-  categoria?: string;
+  categoriaId?: number;
   imagen?: string;
   organizationId: number;
   createdAt?: string;
@@ -30,8 +31,9 @@ export interface ProductoFormData {
   nombre: string;
   descripcion?: string;
   precio: string;
+  costo?: string;
   stock: number;
-  categoria?: string;
+  categoriaId?: number | null;
   imagen?: string;
 }
 
