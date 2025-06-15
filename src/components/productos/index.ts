@@ -1,0 +1,9 @@
+export { ProductsManagement } from "./products-management";
+export { CategoriesManagement } from "./categories-management";
+export { ProductForm } from "./product-form";
+export { CategoryForm } from "./category-form";
+export { ProductStats } from "./product-stats";
+export { CategoryStats } from "./category-stats";
+export { DataTable } from "./data-table";
+export { createProductColumns } from "./product-columns";
+export { createCategoryColumns } from "./category-columns";

@@ -1,5 +1,6 @@
 'use client';
 
+import { authenticatedFetch } from '@/lib/auth/client-utils';
 import { useState, useEffect } from 'react';
 
 export interface Categoria {
@@ -23,7 +24,7 @@ export function useCategorias() {
   const fetchCategorias = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/categorias');
+      const response = await authenticatedFetch('/api/categorias');
       if (!response.ok) {
         throw new Error('Error al cargar categorías');
       }
