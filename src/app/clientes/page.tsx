@@ -83,6 +83,7 @@ import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import { MobileSidebar } from "@/components/mobile-sidebar"
 import { OrganizationSelector } from "@/components/organization-selector"
 import { useOrganization } from "@/hooks/useOrganization"
+import { useClientes } from "@/hooks/useClientes"
 
 // Definir el tipo de datos para clientes
 export type Cliente = {
@@ -99,11 +100,8 @@ export type Cliente = {
   organizationId: number
 }
 
-// Tipo para crear/editar cliente (sin campos calculados)
-export type ClienteFormData = Omit<Cliente, 'id' | 'totalPedidos' | 'valorTotal' | 'fechaRegistro'>
-
-// Datos iniciales vacíos
-const initialData: Cliente[] = []
+// Tipo para los datos del formulario
+export type ClienteFormData = Omit<Cliente, 'id' | 'fechaRegistro' | 'totalPedidos' | 'valorTotal'>
 
 // Componente para el formulario de cliente
 function ClienteForm({ 
@@ -306,15 +304,22 @@ export default function ClientesPage() {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
   
-  // Estados para el CRUD
-  const [clientes, setClientes] = React.useState<Cliente[]>(initialData)
+  // Estados para los diálogos
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false)
   const [selectedCliente, setSelectedCliente] = React.useState<Cliente | null>(null)
   
-  // Usar el hook de organización para filtrar clientes
+  // Usar hooks
   const { selectedOrganizationId } = useOrganization()
+  const { 
+    clientes, 
+    loading, 
+    error, 
+    createCliente, 
+    updateCliente, 
+    deleteCliente 
+  } = useClientes()
   
   // Filtrar datos por organizationId
   const data = React.useMemo(() => {
@@ -333,50 +338,88 @@ export default function ClientesPage() {
     }
   }, [clientes.length, toast])
   
-  // Funciones CRUD
-  const handleCreateCliente = (formData: ClienteFormData) => {
-    const newCliente: Cliente = {
-      ...formData,
-      id: `CLI${String(clientes.length + 1).padStart(3, '0')}`,
-      fechaRegistro: new Date().toISOString().split('T')[0],
-      totalPedidos: 0,
-      valorTotal: 0,
+  // Funciones CRUD usando el hook
+  const handleCreateCliente = async (formData: ClienteFormData) => {
+    try {
+      const newCliente = await createCliente(formData)
+      setIsCreateDialogOpen(false)
+      
+      if (newCliente) {
+        toast({
+          title: "Cliente creado",
+          description: `El cliente ${newCliente.nombre} ha sido creado exitosamente.`,
+        })
+      } else {
+        toast({
+          title: "Cliente creado",
+          description: "El cliente ha sido creado exitosamente.",
+        })
+      }
+    } catch (err) {
+      console.error('Error al crear cliente:', err)
+      toast({
+        title: "Error",
+        description: "No se pudo crear el cliente. Inténtalo de nuevo.",
+        variant: "destructive"
+      })
     }
-    
-    setClientes([...clientes, newCliente])
-    setIsCreateDialogOpen(false)
-    
-    toast({
-      title: "Cliente creado",
-      description: `El cliente ${newCliente.nombre} ha sido creado exitosamente.`,
-    })
   }
   
-  const handleEditCliente = (formData: ClienteFormData) => {
+  const handleEditCliente = async (formData: ClienteFormData) => {
     if (!selectedCliente) return
     
-    const updatedCliente: Cliente = {
-      ...selectedCliente,
-      ...formData,
+    try {
+      const success = await updateCliente(selectedCliente.id, formData)
+      
+      if (success) {
+        setIsEditDialogOpen(false)
+        setSelectedCliente(null)
+        
+        toast({
+          title: "Cliente actualizado",
+          description: `El cliente ${formData.nombre} ha sido actualizado exitosamente.`,
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo actualizar el cliente. Inténtalo de nuevo.",
+          variant: "destructive"
+        })
+      }
+    } catch (err) {
+      console.error('Error al actualizar cliente:', err)
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el cliente. Inténtalo de nuevo.",
+        variant: "destructive"
+      })
     }
-    
-    setClientes(clientes.map(c => c.id === selectedCliente.id ? updatedCliente : c))
-    setIsEditDialogOpen(false)
-    setSelectedCliente(null)
-    
-    toast({
-      title: "Cliente actualizado",
-      description: `El cliente ${updatedCliente.nombre} ha sido actualizado exitosamente.`,
-    })
   }
   
-  const handleDeleteCliente = (cliente: Cliente) => {
-    setClientes(clientes.filter(c => c.id !== cliente.id))
-    
-    toast({
-      title: "Cliente eliminado",
-      description: `El cliente ${cliente.nombre} ha sido eliminado exitosamente.`,
-    })
+  const handleDeleteCliente = async (cliente: Cliente) => {
+    try {
+      const success = await deleteCliente(cliente.id)
+      
+      if (success) {
+        toast({
+          title: "Cliente eliminado",
+          description: `El cliente ${cliente.nombre} ha sido eliminado exitosamente.`,
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo eliminar el cliente. Inténtalo de nuevo.",
+          variant: "destructive"
+        })
+      }
+    } catch (err) {
+      console.error('Error al eliminar cliente:', err)
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el cliente. Inténtalo de nuevo.",
+        variant: "destructive"
+      })
+    }
   }
   
   const handleViewDetails = (cliente: Cliente) => {
@@ -612,7 +655,7 @@ export default function ClientesPage() {
               <OrganizationSelector />
               <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button disabled={loading}>
                     <Plus className="mr-2 h-4 w-4" /> Agregar Cliente
                   </Button>
                 </DialogTrigger>
@@ -632,6 +675,32 @@ export default function ClientesPage() {
             </div>
           </div>
           
+          {/* Mostrar error si existe */}
+          {error && (
+            <div className="rounded-md bg-destructive/15 p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-destructive">
+                    Error al cargar los clientes
+                  </h3>
+                  <div className="mt-2 text-sm text-destructive">
+                    <p>{error}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mostrar loading */}
+          {loading && (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                <p className="mt-2 text-sm text-muted-foreground">Cargando clientes...</p>
+              </div>
+            </div>
+          )}
+
           {/* Tarjetas de métricas */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>

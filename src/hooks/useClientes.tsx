@@ -108,6 +108,34 @@ export const useClientes = (): UseClientesReturn => {
     }
   }, [authenticatedFetch]);
 
+  // Obtener un cliente por ID
+  const getClienteById = useCallback(async (id: string): Promise<Cliente | null> => {
+    try {
+      setState(prev => ({ ...prev, loading: true, error: null }));
+      
+      const response = await authenticatedFetch(`/api/clientes?id=${id}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      setState(prev => ({ ...prev, loading: false }));
+      
+      return data.cliente || null;
+      
+    } catch (error) {
+      console.error('[useClientes] Error al obtener cliente por ID:', error);
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: error instanceof Error ? error.message : 'Error al obtener cliente'
+      }));
+      return null;
+    }
+  }, [authenticatedFetch]);
+
   // Crear un nuevo cliente
   const createCliente = useCallback(async (clienteData: ClienteFormData): Promise<Cliente | null> => {
     try {
@@ -125,14 +153,30 @@ export const useClientes = (): UseClientesReturn => {
       
       const data = await response.json();
       
-      // Refrescar la lista de clientes
+      // Refrescar la lista de clientes para obtener los datos actualizados
       await fetchClientes();
       
       setState(prev => ({ ...prev, loading: false }));
       
-      // Buscar el cliente recién creado
-      const newCliente = state.clientes.find(c => c.id === data.id);
-      return newCliente || null;
+      // Si la API retorna el ID del cliente creado, intentar obtenerlo
+      if (data.id) {
+        try {
+          const newCliente = await getClienteById(data.id.toString());
+          return newCliente;
+        } catch (getError) {
+          console.warn('[useClientes] No se pudo obtener el cliente recién creado:', getError);
+          // Retornar un objeto básico con los datos enviados
+          return {
+            id: data.id.toString(),
+            ...clienteData,
+            fechaRegistro: new Date().toISOString().split('T')[0],
+            totalPedidos: 0,
+            valorTotal: 0
+          } as Cliente;
+        }
+      }
+      
+      return null;
       
     } catch (error) {
       console.error('[useClientes] Error al crear cliente:', error);
@@ -143,7 +187,7 @@ export const useClientes = (): UseClientesReturn => {
       }));
       return null;
     }
-  }, [authenticatedFetch, fetchClientes, state.clientes]);
+  }, [authenticatedFetch, fetchClientes, getClienteById]);
 
   // Actualizar un cliente existente
   const updateCliente = useCallback(async (
@@ -210,34 +254,6 @@ export const useClientes = (): UseClientesReturn => {
       return false;
     }
   }, [authenticatedFetch, fetchClientes]);
-
-  // Obtener un cliente por ID
-  const getClienteById = useCallback(async (id: string): Promise<Cliente | null> => {
-    try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
-      
-      const response = await authenticatedFetch(`/api/clientes?id=${id}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      setState(prev => ({ ...prev, loading: false }));
-      return data.cliente || null;
-      
-    } catch (error) {
-      console.error('[useClientes] Error al obtener cliente:', error);
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: error instanceof Error ? error.message : 'Error al obtener cliente'
-      }));
-      return null;
-    }
-  }, [authenticatedFetch]);
 
   // Refrescar clientes (alias de fetchClientes)
   const refreshClientes = useCallback(async (): Promise<void> => {
