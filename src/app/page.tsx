@@ -1,320 +1,391 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
 import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarGroup, 
-  SidebarGroupContent, 
-  SidebarGroupLabel, 
-  SidebarMenu, 
-  SidebarMenuButton, 
-  SidebarMenuItem, 
-  SidebarProvider,
-  SidebarInset,
-  SidebarTrigger,
-  SidebarHeader,
-  SidebarFooter
-} from "@/components/ui/sidebar";
-import { Home, Package, Users, ShoppingBag, Truck, Settings, Bell } from "lucide-react";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { UserAuthNav } from "@/components/auth/user-auth-nav";
+  Package, 
+  Users, 
+  Shield, 
+  MapPin, 
+  BarChart3, 
+  Star,
+  ArrowRight,
+  Truck,
+  Globe
+} from "lucide-react";
 
-// Importar los componentes del dashboard
-import { MetricsCards } from "@/components/dashboard/metrics-cards";
-import { OrderChart } from "@/components/dashboard/order-chart";
-import { StatusChart } from "@/components/dashboard/status-chart";
-import { RevenueChart } from "@/components/dashboard/revenue-chart";
-import { RecentActivity } from "@/components/dashboard/recent-activity";
-
-// Definir los elementos del menú principal
-const mainMenuItems = [
-  { title: "Dashboard", url: "/", icon: Home },
-  { title: "Pedidos", url: "/pedidos", icon: Package, badge: 25 },
-  { title: "Clientes", url: "/clientes", icon: Users },
-  { title: "Productos", url: "/productos", icon: ShoppingBag },
-  { title: "Repartidores", url: "/repartidores", icon: Truck },
-  { title: "Configuración", url: "/configuracion", icon: Settings },
-];
-
-// Definir los elementos del menú de notificaciones
-const notificationItems = [
-  { title: "Nuevos pedidos", url: "/notificaciones/pedidos", count: 5 },
-  { title: "Alertas de stock", url: "/notificaciones/stock", count: 3 },
-  { title: "Mensajes", url: "/notificaciones/mensajes", count: 2 },
-];
-
-export default function Dashboard() {
+export default function LandingPage() {
   return (
-    <SidebarProvider>
-      <Sidebar collapsible="icon">
-        <SidebarHeader>
-          <div className="flex h-14 items-center justify-between px-4 font-semibold transition-all duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
-            <h1 className="text-xl transition-all duration-200 ease-linear group-data-[collapsible=icon]:hidden">Administrador de Pedidos</h1>
-            <ThemeSwitcher />
-          </div>
-          
-          {/* Perfil de usuario */}
-          <div className="p-4 border-b transition-all duration-200 ease-linear group-data-[collapsible=icon]:h-0 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:overflow-hidden group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:border-0">
-            <UserAuthNav />
-          </div>
-        </SidebarHeader>
-        
-        <SidebarContent>
-          {/* Menú principal */}
-          <SidebarGroup>
-            <SidebarGroupLabel>Navegación</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {mainMenuItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <a href={item.url} className="flex justify-between w-full">
-                        <span className="flex items-center">
-                          <item.icon className="mr-2 h-4 w-4" />
-                          <span>{item.title}</span>
-                        </span>
-                        {item.badge && (
-                          <Badge variant="secondary" className="ml-auto">
-                            {item.badge}
-                          </Badge>
-                        )}
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-          
-          {/* Sección de notificaciones */}
-          <SidebarGroup>
-            <SidebarGroupLabel>
-              <div className="flex items-center">
-                <Bell className="mr-2 h-4 w-4" />
-                <span>Notificaciones</span>
-              </div>
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {notificationItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <a href={item.url} className="flex justify-between w-full">
-                        <span>{item.title}</span>
-                        {item.count > 0 && (
-                          <Badge variant="destructive" className="ml-auto">
-                            {item.count}
-                          </Badge>
-                        )}
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-        
-        <SidebarFooter>
-          <div className="p-4 text-xs text-muted-foreground transition-all duration-200 ease-linear group-data-[collapsible=icon]:h-0 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:overflow-hidden group-data-[collapsible=icon]:p-0">
-            © 2024 Delivery Tracker
-          </div>
-        </SidebarFooter>
-      </Sidebar>
-      
-      <SidebarInset>
-        {/* Header con trigger para mobile */}
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold">Dashboard</h1>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Última actualización: Hoy, 10:30 AM</span>
-          </div>
-        </header>
-        
-        <div className="p-6">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold">Dashboard</h1>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Última actualización: Hoy, 10:30 AM</span>
-              </div>
+    <div className="min-h-screen bg-background">
+      {/* Navigation */}
+      <nav className="border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <Package className="h-8 w-8 text-primary" />
+              <span className="ml-2 text-xl font-bold">DeliveryTracker</span>
             </div>
-          
-            {/* Métricas con indicadores de tendencia */}
-            <MetricsCards />
-
-            {/* Gráficos */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-              {/* Gráfico de pedidos por mes (ocupa 4 columnas) */}
-              <OrderChart />
-              
-              {/* Gráfico de distribución de estados (ocupa 3 columnas) */}
-              <div className="md:col-span-2 lg:col-span-3">
-                <StatusChart />
-              </div>
-            </div>
-
-            {/* Gráfico de ingresos */}
-            <RevenueChart />
-
-            {/* Sección inferior: Actividad reciente y Pedidos */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-              {/* Actividad reciente (ocupa 3 columnas) */}
-              <div className="md:col-span-2 lg:col-span-3">
-                <RecentActivity />
-              </div>
-              
-              {/* Tabs de pedidos (ocupa 4 columnas) */}
-              <div className="md:col-span-2 lg:col-span-4">
-                <Tabs defaultValue="recientes" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="recientes">Recientes</TabsTrigger>
-                    <TabsTrigger value="pendientes">Pendientes</TabsTrigger>
-                    <TabsTrigger value="completados">Completados</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="recientes" className="space-y-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Pedidos Recientes</CardTitle>
-                        <CardDescription>Lista de los últimos pedidos realizados</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>ID</TableHead>
-                              <TableHead>Cliente</TableHead>
-                              <TableHead>Fecha</TableHead>
-                              <TableHead>Total</TableHead>
-                              <TableHead>Estado</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            <TableRow>
-                              <TableCell>PED-001</TableCell>
-                              <TableCell>Juan Pérez</TableCell>
-                              <TableCell>2023-06-15</TableCell>
-                              <TableCell>$125.00</TableCell>
-                              <TableCell><Badge>Entregado</Badge></TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>PED-002</TableCell>
-                              <TableCell>María López</TableCell>
-                              <TableCell>2023-06-14</TableCell>
-                              <TableCell>$85.50</TableCell>
-                              <TableCell><Badge variant="outline">En camino</Badge></TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>PED-003</TableCell>
-                              <TableCell>Carlos Ruiz</TableCell>
-                              <TableCell>2023-06-14</TableCell>
-                              <TableCell>$210.75</TableCell>
-                              <TableCell><Badge variant="secondary">Pendiente</Badge></TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>PED-004</TableCell>
-                              <TableCell>Ana Gómez</TableCell>
-                              <TableCell>2023-06-13</TableCell>
-                              <TableCell>$45.25</TableCell>
-                              <TableCell><Badge>Entregado</Badge></TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>PED-005</TableCell>
-                              <TableCell>Roberto Díaz</TableCell>
-                              <TableCell>2023-06-13</TableCell>
-                              <TableCell>$150.00</TableCell>
-                              <TableCell><Badge variant="destructive">Cancelado</Badge></TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                  <TabsContent value="pendientes" className="space-y-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Pedidos Pendientes</CardTitle>
-                        <CardDescription>Pedidos que requieren atención</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>ID</TableHead>
-                              <TableHead>Cliente</TableHead>
-                              <TableHead>Fecha</TableHead>
-                              <TableHead>Total</TableHead>
-                              <TableHead>Estado</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            <TableRow>
-                              <TableCell>PED-003</TableCell>
-                              <TableCell>Carlos Ruiz</TableCell>
-                              <TableCell>2023-06-14</TableCell>
-                              <TableCell>$210.75</TableCell>
-                              <TableCell><Badge variant="secondary">Pendiente</Badge></TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>PED-006</TableCell>
-                              <TableCell>Laura Sánchez</TableCell>
-                              <TableCell>2023-06-12</TableCell>
-                              <TableCell>$95.30</TableCell>
-                              <TableCell><Badge variant="secondary">Pendiente</Badge></TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                  <TabsContent value="completados" className="space-y-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Pedidos Completados</CardTitle>
-                        <CardDescription>Pedidos entregados satisfactoriamente</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>ID</TableHead>
-                              <TableHead>Cliente</TableHead>
-                              <TableHead>Fecha</TableHead>
-                              <TableHead>Total</TableHead>
-                              <TableHead>Estado</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            <TableRow>
-                              <TableCell>PED-001</TableCell>
-                              <TableCell>Juan Pérez</TableCell>
-                              <TableCell>2023-06-15</TableCell>
-                              <TableCell>$125.00</TableCell>
-                              <TableCell><Badge>Entregado</Badge></TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>PED-004</TableCell>
-                              <TableCell>Ana Gómez</TableCell>
-                              <TableCell>2023-06-13</TableCell>
-                              <TableCell>$45.25</TableCell>
-                              <TableCell><Badge>Entregado</Badge></TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                </Tabs>
-              </div>
+            <div className="flex items-center space-x-4">
+              <Link href="/auth/login">
+                <Button variant="ghost">Iniciar Sesión</Button>
+              </Link>
+              <Link href="/auth/register">
+                <Button>Comenzar Gratis</Button>
+              </Link>
             </div>
           </div>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto text-center">
+          <Badge variant="secondary" className="mb-4">
+            🚀 Plataforma de Gestión de Entregas
+          </Badge>
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+            Gestiona tus entregas con
+            <span className="text-primary block">inteligencia y eficiencia</span>
+          </h1>
+          <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+            DeliveryTracker es la solución completa para administrar pedidos, repartidores y clientes. 
+            Optimiza tus operaciones de entrega con análisis en tiempo real y herramientas avanzadas.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/auth/register">
+              <Button size="lg" className="w-full sm:w-auto">
+                Comenzar Prueba Gratuita
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+            <Button variant="outline" size="lg" className="w-full sm:w-auto">
+              Ver Demo
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Características que impulsan tu negocio
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Herramientas poderosas diseñadas para optimizar cada aspecto de tu operación de entregas
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                  <BarChart3 className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle>Dashboard Inteligente</CardTitle>
+                <CardDescription>
+                  Visualiza métricas clave, tendencias y KPIs en tiempo real con gráficos interactivos
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                  <Truck className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle>Gestión de Repartidores</CardTitle>
+                <CardDescription>
+                  Administra tu equipo de entrega, asigna rutas y monitorea el rendimiento individual
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                  <Package className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle>Control de Pedidos</CardTitle>
+                <CardDescription>
+                  Rastrea pedidos desde la creación hasta la entrega con actualizaciones automáticas
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                  <Users className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle>Base de Clientes</CardTitle>
+                <CardDescription>
+                  Mantén un registro completo de clientes con historial de pedidos y preferencias
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                  <MapPin className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle>Seguimiento GPS</CardTitle>
+                <CardDescription>
+                  Monitorea entregas en tiempo real con geolocalización precisa y rutas optimizadas
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                  <Shield className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle>Seguridad Avanzada</CardTitle>
+                <CardDescription>
+                  Protección de datos con autenticación Firebase y control de acceso por organizaciones
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-8 text-center">
+            <div>
+              <div className="text-4xl font-bold text-primary mb-2">99.9%</div>
+              <div className="text-muted-foreground">Tiempo de actividad</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-primary mb-2">50K+</div>
+              <div className="text-muted-foreground">Entregas procesadas</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-primary mb-2">24/7</div>
+              <div className="text-muted-foreground">Soporte técnico</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-primary mb-2">15min</div>
+              <div className="text-muted-foreground">Tiempo de configuración</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Technology Stack */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Tecnología de vanguardia
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Construido con las mejores herramientas y frameworks para garantizar rendimiento y escalabilidad
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="text-center">
+              <CardHeader>
+                <Globe className="h-12 w-12 mx-auto text-primary mb-4" />
+                <CardTitle>Next.js 15</CardTitle>
+                <CardDescription>
+                  Framework React de última generación con App Router y optimizaciones avanzadas
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="text-center">
+              <CardHeader>
+                <Shield className="h-12 w-12 mx-auto text-primary mb-4" />
+                <CardTitle>Firebase Auth</CardTitle>
+                <CardDescription>
+                  Autenticación segura y escalable con soporte para múltiples proveedores
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="text-center">
+              <CardHeader>
+                <BarChart3 className="h-12 w-12 mx-auto text-primary mb-4" />
+                <CardTitle>Drizzle ORM</CardTitle>
+                <CardDescription>
+                  ORM moderno y type-safe para gestión eficiente de base de datos
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Lo que dicen nuestros clientes
+            </h2>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-primary text-primary" />
+                  ))}
+                </div>
+                <CardDescription>
+                  &ldquo;DeliveryTracker transformó completamente nuestra operación. Ahora podemos manejar 3x más pedidos con la misma eficiencia.&rdquo;
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mr-3">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="font-semibold">María González</div>
+                    <div className="text-sm text-muted-foreground">CEO, FastDelivery</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-primary text-primary" />
+                  ))}
+                </div>
+                <CardDescription>
+                  &ldquo;La interfaz es intuitiva y las métricas en tiempo real nos ayudan a tomar decisiones más inteligentes cada día.&rdquo;
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mr-3">
+                    <Truck className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="font-semibold">Carlos Ruiz</div>
+                    <div className="text-sm text-muted-foreground">Gerente, LogiExpress</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-primary text-primary" />
+                  ))}
+                </div>
+                <CardDescription>
+                  &ldquo;El soporte técnico es excepcional y la plataforma nunca nos ha fallado. Altamente recomendado.&rdquo;
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mr-3">
+                    <Package className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="font-semibold">Ana Martínez</div>
+                    <div className="text-sm text-muted-foreground">Fundadora, QuickSend</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-primary text-primary-foreground">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            ¿Listo para optimizar tus entregas?
+          </h2>
+          <p className="text-xl mb-8 opacity-90">
+            Únete a cientos de empresas que ya confían en DeliveryTracker para gestionar sus operaciones de entrega
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/auth/register">
+              <Button size="lg" variant="secondary" className="w-full sm:w-auto">
+                Comenzar Prueba Gratuita
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+            <Button size="lg" variant="outline" className="w-full sm:w-auto border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+              Contactar Ventas
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <div className="flex items-center mb-4">
+                <Package className="h-6 w-6 text-primary" />
+                <span className="ml-2 text-lg font-bold">DeliveryTracker</span>
+              </div>
+              <p className="text-muted-foreground">
+                La plataforma más avanzada para gestión de entregas y logística.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Producto</h3>
+              <ul className="space-y-2 text-muted-foreground">
+                <li><Link href="#" className="hover:text-foreground">Características</Link></li>
+                <li><Link href="#" className="hover:text-foreground">Precios</Link></li>
+                <li><Link href="#" className="hover:text-foreground">API</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Empresa</h3>
+              <ul className="space-y-2 text-muted-foreground">
+                <li><Link href="#" className="hover:text-foreground">Acerca de</Link></li>
+                <li><Link href="#" className="hover:text-foreground">Blog</Link></li>
+                <li><Link href="#" className="hover:text-foreground">Carreras</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Soporte</h3>
+              <ul className="space-y-2 text-muted-foreground">
+                <li><Link href="#" className="hover:text-foreground">Documentación</Link></li>
+                <li><Link href="#" className="hover:text-foreground">Contacto</Link></li>
+                <li><Link href="#" className="hover:text-foreground">Estado</Link></li>
+              </ul>
+            </div>
+          </div>
+          <Separator className="my-8" />
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <p className="text-muted-foreground">
+              © 2024 DeliveryTracker. Todos los derechos reservados.
+            </p>
+            <div className="flex space-x-4 mt-4 md:mt-0">
+              <Link href="#" className="text-muted-foreground hover:text-foreground">
+                Privacidad
+              </Link>
+              <Link href="#" className="text-muted-foreground hover:text-foreground">
+                Términos
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
