@@ -22,6 +22,9 @@ import {
   UserCheck,
   UserX,
   DollarSign,
+  Edit,
+  Trash2,
+  Eye,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -45,6 +48,35 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { useToast } from "@/hooks/use-toast"
 
 // Importar los componentes del sidebar
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
@@ -67,244 +99,461 @@ export type Cliente = {
   organizationId: number
 }
 
-// Datos de ejemplo con organizationId
-const allData: Cliente[] = [
-  {
-    id: "CLI001",
-    nombre: "Ana García",
-    email: "ana.garcia@email.com",
-    telefono: "+57 300 123 4567",
-    empresa: "Tech Solutions SAS",
-    estado: "activo",
-    fechaRegistro: "2024-01-15",
-    totalPedidos: 12,
-    valorTotal: 2450000,
-    ciudad: "Bogotá",
-    organizationId: 1
-  },
-  {
-    id: "CLI002",
-    nombre: "Carlos Rodríguez",
-    email: "carlos.rodriguez@empresa.com",
-    telefono: "+57 301 987 6543",
-    empresa: "Innovación Digital Ltda",
-    estado: "activo",
-    fechaRegistro: "2024-02-20",
-    totalPedidos: 8,
-    valorTotal: 1890000,
-    ciudad: "Medellín",
-    organizationId: 1
-  },
-  {
-    id: "CLI003",
-    nombre: "María López",
-    email: "maria.lopez@gmail.com",
-    telefono: "+57 302 456 7890",
-    empresa: "Freelancer",
-    estado: "pendiente",
-    fechaRegistro: "2024-03-10",
-    totalPedidos: 3,
-    valorTotal: 650000,
-    ciudad: "Cali",
-    organizationId: 2
-  },
-  {
-    id: "CLI004",
-    nombre: "Juan Martínez",
-    email: "juan.martinez@corporativo.co",
-    telefono: "+57 303 789 0123",
-    empresa: "Corporativo Nacional",
-    estado: "activo",
-    fechaRegistro: "2023-11-05",
-    totalPedidos: 25,
-    valorTotal: 4200000,
-    ciudad: "Barranquilla",
-    organizationId: 2
-  },
-  {
-    id: "CLI005",
-    nombre: "Laura Sánchez",
-    email: "laura.sanchez@startup.io",
-    telefono: "+57 304 234 5678",
-    empresa: "StartUp Innovadora",
-    estado: "inactivo",
-    fechaRegistro: "2024-01-30",
-    totalPedidos: 5,
-    valorTotal: 980000,
-    ciudad: "Bucaramanga",
-    organizationId: 1
-  },
-  {
-    id: "CLI006",
-    nombre: "Diego Herrera",
-    email: "diego.herrera@pyme.com",
-    telefono: "+57 305 567 8901",
-    empresa: "PYME Tradicional",
-    estado: "activo",
-    fechaRegistro: "2023-12-12",
-    totalPedidos: 18,
-    valorTotal: 3100000,
-    ciudad: "Cartagena",
-    organizationId: 2
+// Tipo para crear/editar cliente (sin campos calculados)
+export type ClienteFormData = Omit<Cliente, 'id' | 'totalPedidos' | 'valorTotal' | 'fechaRegistro'>
+
+// Datos iniciales vacíos
+const initialData: Cliente[] = []
+
+// Componente para el formulario de cliente
+function ClienteForm({ 
+  cliente, 
+  onSubmit, 
+  onCancel, 
+  isEditing = false 
+}: {
+  cliente?: Cliente
+  onSubmit: (data: ClienteFormData) => void
+  onCancel: () => void
+  isEditing?: boolean
+}) {
+  const { toast } = useToast()
+  const { selectedOrganizationId } = useOrganization()
+  const [formData, setFormData] = React.useState<ClienteFormData>({
+    nombre: cliente?.nombre || '',
+    email: cliente?.email || '',
+    telefono: cliente?.telefono || '',
+    empresa: cliente?.empresa || '',
+    estado: cliente?.estado || 'activo',
+    ciudad: cliente?.ciudad || '',
+    organizationId: cliente?.organizationId || selectedOrganizationId || 1
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formData.nombre || !formData.email || !formData.telefono) {
+      toast({
+        title: "Error",
+        description: "Por favor completa todos los campos requeridos",
+        variant: "destructive"
+      })
+      return
+    }
+    onSubmit(formData)
   }
-]
 
-// Definir las columnas de la tabla
-const columns: ColumnDef<Cliente>[] = [
-  {
-    accessorKey: "nombre",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Nombre
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const cliente = row.original
-      return (
-        <div className="flex flex-col">
-          <div className="font-medium">{cliente.nombre}</div>
-          <div className="text-sm text-muted-foreground">{cliente.empresa}</div>
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="nombre">Nombre *</Label>
+          <Input
+            id="nombre"
+            value={formData.nombre}
+            onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+            placeholder="Nombre completo"
+            required
+          />
         </div>
-      )
-    },
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-    cell: ({ row }) => (
-      <div className="text-sm">{row.getValue("email")}</div>
-    ),
-  },
-  {
-    accessorKey: "telefono",
-    header: "Teléfono",
-  },
-  {
-    accessorKey: "ciudad",
-    header: "Ciudad",
-  },
-  {
-    accessorKey: "estado",
-    header: "Estado",
-    cell: ({ row }) => {
-      const estado = row.getValue("estado") as string
-      return (
-        <Badge
-          variant={
-            estado === "activo"
-              ? "default"
-              : estado === "pendiente"
-              ? "secondary"
-              : "destructive"
-          }
-        >
-          {estado.charAt(0).toUpperCase() + estado.slice(1)}
-        </Badge>
-      )
-    },
-  },
-  {
-    accessorKey: "totalPedidos",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Pedidos
-          <ArrowUpDown className="ml-2 h-4 w-4" />
+        <div className="space-y-2">
+          <Label htmlFor="email">Email *</Label>
+          <Input
+            id="email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            placeholder="correo@ejemplo.com"
+            required
+          />
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="telefono">Teléfono *</Label>
+          <Input
+            id="telefono"
+            value={formData.telefono}
+            onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+            placeholder="+57 300 123 4567"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="empresa">Empresa</Label>
+          <Input
+            id="empresa"
+            value={formData.empresa}
+            onChange={(e) => setFormData({ ...formData, empresa: e.target.value })}
+            placeholder="Nombre de la empresa"
+          />
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="ciudad">Ciudad</Label>
+          <Input
+            id="ciudad"
+            value={formData.ciudad}
+            onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
+            placeholder="Ciudad"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="estado">Estado</Label>
+          <Select value={formData.estado} onValueChange={(value: 'activo' | 'inactivo' | 'pendiente') => setFormData({ ...formData, estado: value })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Seleccionar estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="activo">Activo</SelectItem>
+              <SelectItem value="pendiente">Pendiente</SelectItem>
+              <SelectItem value="inactivo">Inactivo</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancelar
         </Button>
-      )
-    },
-    cell: ({ row }) => {
-      return <div className="text-center">{row.getValue("totalPedidos")}</div>
-    },
-  },
-  {
-    accessorKey: "valorTotal",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Valor Total
-          <ArrowUpDown className="ml-2 h-4 w-4" />
+        <Button type="submit">
+          {isEditing ? 'Actualizar' : 'Crear'} Cliente
         </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("valorTotal"))
-      const formatted = new Intl.NumberFormat("es-CO", {
-        style: "currency",
-        currency: "COP",
-      }).format(amount)
-      return <div className="text-right font-medium">{formatted}</div>
-    },
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const cliente = row.original
+      </DialogFooter>
+    </form>
+  )
+}
 
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Abrir menú</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(cliente.id)}
-            >
-              Copiar ID del cliente
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Ver detalles</DropdownMenuItem>
-            <DropdownMenuItem>Editar cliente</DropdownMenuItem>
-            <DropdownMenuItem>Ver pedidos</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">
-              Eliminar cliente
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
-  },
-]
-
-
+// Componente para ver detalles del cliente
+function ClienteDetails({ cliente }: { cliente: Cliente }) {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label className="text-sm font-medium text-muted-foreground">Nombre</Label>
+          <p className="text-sm">{cliente.nombre}</p>
+        </div>
+        <div>
+          <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+          <p className="text-sm">{cliente.email}</p>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label className="text-sm font-medium text-muted-foreground">Teléfono</Label>
+          <p className="text-sm">{cliente.telefono}</p>
+        </div>
+        <div>
+          <Label className="text-sm font-medium text-muted-foreground">Empresa</Label>
+          <p className="text-sm">{cliente.empresa || 'N/A'}</p>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label className="text-sm font-medium text-muted-foreground">Ciudad</Label>
+          <p className="text-sm">{cliente.ciudad || 'N/A'}</p>
+        </div>
+        <div>
+          <Label className="text-sm font-medium text-muted-foreground">Estado</Label>
+          <Badge
+            variant={
+              cliente.estado === "activo"
+                ? "default"
+                : cliente.estado === "pendiente"
+                ? "secondary"
+                : "destructive"
+            }
+          >
+            {cliente.estado.charAt(0).toUpperCase() + cliente.estado.slice(1)}
+          </Badge>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <Label className="text-sm font-medium text-muted-foreground">Fecha de Registro</Label>
+          <p className="text-sm">{new Date(cliente.fechaRegistro).toLocaleDateString('es-CO')}</p>
+        </div>
+        <div>
+          <Label className="text-sm font-medium text-muted-foreground">Total Pedidos</Label>
+          <p className="text-sm font-bold">{cliente.totalPedidos}</p>
+        </div>
+        <div>
+          <Label className="text-sm font-medium text-muted-foreground">Valor Total</Label>
+          <p className="text-sm font-bold">
+            {new Intl.NumberFormat("es-CO", {
+              style: "currency",
+              currency: "COP",
+            }).format(cliente.valorTotal)}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // Componente principal de la página
 export default function ClientesPage() {
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  )
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
+  const { toast } = useToast();
 
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [rowSelection, setRowSelection] = React.useState({})
+  
+  // Estados para el CRUD
+  const [clientes, setClientes] = React.useState<Cliente[]>(initialData)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false)
+  const [selectedCliente, setSelectedCliente] = React.useState<Cliente | null>(null)
   
   // Usar el hook de organización para filtrar clientes
   const { selectedOrganizationId } = useOrganization()
   
   // Filtrar datos por organizationId
   const data = React.useMemo(() => {
-    if (!selectedOrganizationId) return allData
-    return allData.filter(cliente => cliente.organizationId === selectedOrganizationId)
-  }, [selectedOrganizationId])
+    if (!selectedOrganizationId) return clientes
+    return clientes.filter(cliente => cliente.organizationId === selectedOrganizationId)
+  }, [selectedOrganizationId, clientes])
+  
+  // Mostrar toast cuando no hay clientes
+  React.useEffect(() => {
+    if (clientes.length === 0) {
+      toast({
+        title: "No hay clientes",
+        description: "No existen clientes registrados. Puedes crear el primer cliente usando el botón 'Nuevo Cliente'.",
+        variant: "default"
+      })
+    }
+  }, [clientes.length, toast])
+  
+  // Funciones CRUD
+  const handleCreateCliente = (formData: ClienteFormData) => {
+    const newCliente: Cliente = {
+      ...formData,
+      id: `CLI${String(clientes.length + 1).padStart(3, '0')}`,
+      fechaRegistro: new Date().toISOString().split('T')[0],
+      totalPedidos: 0,
+      valorTotal: 0,
+    }
+    
+    setClientes([...clientes, newCliente])
+    setIsCreateDialogOpen(false)
+    
+    toast({
+      title: "Cliente creado",
+      description: `El cliente ${newCliente.nombre} ha sido creado exitosamente.`,
+    })
+  }
+  
+  const handleEditCliente = (formData: ClienteFormData) => {
+    if (!selectedCliente) return
+    
+    const updatedCliente: Cliente = {
+      ...selectedCliente,
+      ...formData,
+    }
+    
+    setClientes(clientes.map(c => c.id === selectedCliente.id ? updatedCliente : c))
+    setIsEditDialogOpen(false)
+    setSelectedCliente(null)
+    
+    toast({
+      title: "Cliente actualizado",
+      description: `El cliente ${updatedCliente.nombre} ha sido actualizado exitosamente.`,
+    })
+  }
+  
+  const handleDeleteCliente = (cliente: Cliente) => {
+    setClientes(clientes.filter(c => c.id !== cliente.id))
+    
+    toast({
+      title: "Cliente eliminado",
+      description: `El cliente ${cliente.nombre} ha sido eliminado exitosamente.`,
+    })
+  }
+  
+  const handleViewDetails = (cliente: Cliente) => {
+    setSelectedCliente(cliente)
+    setIsDetailsDialogOpen(true)
+  }
+  
+  const handleEditClick = (cliente: Cliente) => {
+    setSelectedCliente(cliente)
+    setIsEditDialogOpen(true)
+  }
+
+  // Definir las columnas de la tabla
+  const columns: ColumnDef<Cliente>[] = [
+    {
+      accessorKey: "nombre",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Nombre
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => {
+        const cliente = row.original
+        return (
+          <div className="flex flex-col">
+            <div className="font-medium">{cliente.nombre}</div>
+            <div className="text-sm text-muted-foreground">{cliente.empresa}</div>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+      cell: ({ row }) => (
+        <div className="text-sm">{row.getValue("email")}</div>
+      ),
+    },
+    {
+      accessorKey: "telefono",
+      header: "Teléfono",
+    },
+    {
+      accessorKey: "ciudad",
+      header: "Ciudad",
+    },
+    {
+      accessorKey: "estado",
+      header: "Estado",
+      cell: ({ row }) => {
+        const estado = row.getValue("estado") as string
+        return (
+          <Badge
+            variant={
+              estado === "activo"
+                ? "default"
+                : estado === "pendiente"
+                ? "secondary"
+                : "destructive"
+            }
+          >
+            {estado.charAt(0).toUpperCase() + estado.slice(1)}
+          </Badge>
+        )
+      },
+    },
+    {
+      accessorKey: "totalPedidos",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Pedidos
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => {
+        return <div className="text-center">{row.getValue("totalPedidos")}</div>
+      },
+    },
+    {
+      accessorKey: "valorTotal",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Valor Total
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => {
+        const amount = parseFloat(row.getValue("valorTotal"))
+        const formatted = new Intl.NumberFormat("es-CO", {
+          style: "currency",
+          currency: "COP",
+        }).format(amount)
+        return <div className="text-right font-medium">{formatted}</div>
+      },
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const cliente = row.original
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Abrir menú</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => navigator.clipboard.writeText(cliente.id)}
+              >
+                Copiar ID del cliente
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleViewDetails(cliente)}>
+                <Eye className="mr-2 h-4 w-4" />
+                Ver detalles
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleEditClick(cliente)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Editar cliente
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem
+                    className="text-red-600"
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar cliente
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta acción no se puede deshacer. Esto eliminará permanentemente
+                      el cliente {cliente.nombre} y todos sus datos asociados.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => handleDeleteCliente(cliente)}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Eliminar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    },
+  ]
   
   // Configurar tabla
   const table = useReactTable({
@@ -361,9 +610,25 @@ export default function ClientesPage() {
             </div>
             <div className="flex items-center space-x-4">
               <OrganizationSelector />
-              <Button>
-                <Plus className="mr-2 h-4 w-4" /> Agregar Cliente
-              </Button>
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" /> Agregar Cliente
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px]">
+                  <DialogHeader>
+                    <DialogTitle>Crear Nuevo Cliente</DialogTitle>
+                    <DialogDescription>
+                      Completa la información del nuevo cliente. Los campos marcados con * son obligatorios.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <ClienteForm
+                    onSubmit={handleCreateCliente}
+                    onCancel={() => setIsCreateDialogOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
           
@@ -394,7 +659,7 @@ export default function ClientesPage() {
               <CardContent>
                 <div className="text-2xl font-bold">{clientesActivos}</div>
                 <p className="text-xs text-muted-foreground">
-                  {((clientesActivos / totalClientes) * 100).toFixed(1)}% del total
+                  {totalClientes > 0 ? ((clientesActivos / totalClientes) * 100).toFixed(1) : 0}% del total
                 </p>
               </CardContent>
             </Card>
@@ -559,6 +824,62 @@ export default function ClientesPage() {
           </Card>
         </div>
       </div>
+      
+      {/* Dialog para editar cliente */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Editar Cliente</DialogTitle>
+            <DialogDescription>
+              Modifica la información del cliente. Los campos marcados con * son obligatorios.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedCliente && (
+            <ClienteForm
+              cliente={selectedCliente}
+              onSubmit={handleEditCliente}
+              onCancel={() => {
+                setIsEditDialogOpen(false)
+                setSelectedCliente(null)
+              }}
+              isEditing
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog para ver detalles del cliente */}
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Detalles del Cliente</DialogTitle>
+            <DialogDescription>
+              Información completa del cliente seleccionado.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedCliente && <ClienteDetails cliente={selectedCliente} />}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsDetailsDialogOpen(false)
+                setSelectedCliente(null)
+              }}
+            >
+              Cerrar
+            </Button>
+            <Button
+              onClick={() => {
+                setIsDetailsDialogOpen(false)
+                handleEditClick(selectedCliente!)
+              }}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Editar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
