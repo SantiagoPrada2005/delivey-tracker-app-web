@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useClientes } from "@/hooks/useClientes";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { MobileSidebar } from "@/components/mobile-sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -108,15 +109,6 @@ interface Pedido {
   }[];
 }
 
-interface Cliente {
-  id: number;
-  nombre: string;
-  apellido: string;
-  telefono: string;
-  email: string;
-  direccion: string;
-}
-
 interface Producto {
   id: number;
   nombre: string;
@@ -169,8 +161,10 @@ function formatearTiempo(minutos: number): string {
 }
 
 export default function PedidosPage() {
+  // Hook para manejar clientes
+  const { clientes, loading: clientesLoading, fetchClientes } = useClientes();
+  
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
-  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -192,9 +186,9 @@ export default function PedidosPage() {
   // Cargar datos iniciales
   useEffect(() => {
     loadPedidos();
-    loadClientes();
     loadProductos();
     // loadEstadisticas();
+    // Los clientes se cargan automáticamente con el hook useClientes
   }, []);
 
   const loadPedidos = async () => {
@@ -216,17 +210,7 @@ export default function PedidosPage() {
     }
   };
 
-  const loadClientes = async () => {
-    try {
-      const response = await fetch('/api/clientes');
-      const data = await response.json();
-      if (data.success) {
-        setClientes(data.clientes);
-      }
-    } catch (error) {
-      console.error('Error loading clientes:', error);
-    }
-  };
+
 
   const loadProductos = async () => {
     try {
@@ -435,7 +419,7 @@ export default function PedidosPage() {
     ? Math.round(tiemposEntrega.reduce((a, b) => a + b, 0) / tiemposEntrega.length)
     : 0;
 
-  if (loading) {
+  if (loading || clientesLoading) {
     return (
       <div className="flex min-h-screen bg-background">
         <div className="hidden lg:block">
@@ -574,7 +558,13 @@ export default function PedidosPage() {
                 </SelectContent>
               </Select>
             </div>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+              setIsCreateDialogOpen(open);
+              if (open) {
+                // Refrescar clientes cuando se abre el diálogo
+                fetchClientes();
+              }
+            }}>
               <DialogTrigger asChild>
                 <Button className="md:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
