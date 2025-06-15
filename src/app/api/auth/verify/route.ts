@@ -1,28 +1,41 @@
 /**
  * @fileoverview API route para verificar tokens de Firebase
- * @version 1.0.0
+ * @version 2.0.0
  * @author Santiago Prada
  * @date 2025-01-20
  * 
  * @description
  * Esta API route proporciona endpoints para verificar tokens de Firebase Auth
- * y obtener información del usuario autenticado.
+ * y obtener información del usuario autenticado. Actualizada para usar las
+ * nuevas utilidades de autenticación centralizadas.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyFirebaseToken } from '@/lib/firebase/admin';
+import { 
+  authenticateRequest,
+  createAuthErrorResponse,
+  createAuthSuccessResponse
+} from '@/lib/auth/utils';
 
 /**
  * Interface para la respuesta de verificación de token
  * @interface TokenVerificationResponse
  */
 interface TokenVerificationResponse {
-  uid?: string;
+  uid: string;
   email?: string;
   emailVerified?: boolean;
-  displayName?: string;
+  displayName?: unknown;
   photoURL?: string;
-  error?: string;
-  details?: string;
+  role?: unknown;
+  organizationId?: unknown;
+  permissions?: unknown;
+  authTime: number;
+  issuedAt: number;
+  expiresAt: number;
+  firebase: {
+    identities: unknown;
+    signInProvider?: string | null;
+  };
 }
 
 /**
@@ -41,65 +54,67 @@ interface TokenVerificationResponse {
  * 
  * // Response (200)
  * {
- *   "uid": "firebase_user_id",
- *   "email": "user@example.com",
- *   "emailVerified": true,
- *   "displayName": "User Name",
- *   "photoURL": "https://example.com/photo.jpg"
+ *   "data": {
+ *     "uid": "firebase_user_id",
+ *     "email": "user@example.com",
+ *     "emailVerified": true,
+ *     "displayName": "User Name",
+ *     "photoURL": "https://example.com/photo.jpg",
+ *     "role": "user",
+ *     "organizationId": "org123"
+ *   },
+ *   "message": "Token verificado exitosamente"
  * }
  * 
  * // Response (401)
  * {
- *   "error": "Token inválido o expirado",
- *   "details": "Error message"
+ *   "error": "Token inválido o expirado"
  * }
  */
-export async function POST(request: NextRequest): Promise<NextResponse<TokenVerificationResponse>> {
+export async function POST(request: NextRequest): Promise<NextResponse<{ data: TokenVerificationResponse; message?: string }> | NextResponse<{ error: string }>> {
   try {
-    // Obtener el token del encabezado de autorización
-    const authHeader = request.headers.get('Authorization');
+    // Usar la nueva utilidad de autenticación
+    const authResult = await authenticateRequest(request, false);
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Token no proporcionado o formato inválido' },
-        { status: 401 }
+    if (!authResult.success) {
+      return createAuthErrorResponse(
+        authResult.error || 'Error de autenticación',
+        authResult.statusCode || 401
       );
     }
     
-    // Extraer el token
-    const token = authHeader.split('Bearer ')[1];
+    const { user } = authResult;
     
-    // Verificar el token con Firebase Admin
-    const decodedToken = await verifyFirebaseToken(token);
+    // Preparar la información del usuario
+    const userData = {
+      uid: user!.uid,
+      email: user!.email,
+      emailVerified: user!.email_verified,
+      displayName: user!.name,
+      photoURL: user!.picture,
+      // Incluir claims personalizados si existen
+      role: user!.role || null,
+      organizationId: user!.organizationId || null,
+      permissions: user!.permissions || null,
+      // Información adicional del token
+      authTime: user!.auth_time,
+      issuedAt: user!.iat,
+      expiresAt: user!.exp,
+      // Firebase específico
+      firebase: {
+        identities: user!.firebase?.identities || {},
+        signInProvider: user!.firebase?.sign_in_provider || null
+      }
+    };
     
-    // Verificar si el token es válido
-    if (!decodedToken) {
-      return NextResponse.json(
-        { error: 'Token inválido o expirado' },
-        { status: 401 }
-      );
-    }
-    
-    // Devolver la información del usuario decodificada
-    return NextResponse.json({
-      uid: decodedToken.uid,
-      email: decodedToken.email,
-      emailVerified: decodedToken.email_verified,
-      displayName: decodedToken.name,
-      photoURL: decodedToken.picture,
-      // Puedes incluir claims personalizados si los tienes
-      // role: decodedToken.role,
-    });
-  } catch (error) {
-    console.error('Error al verificar token:', error);
-    
-    // Manejar el error como tipo unknown
-    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-    
-    return NextResponse.json(
-      { error: 'Token inválido o expirado', details: errorMessage },
-      { status: 401 }
+    return createAuthSuccessResponse(
+      userData,
+      'Token verificado exitosamente'
     );
+    
+  } catch (error) {
+    console.error('[Auth Verify API] Error:', error);
+    return createAuthErrorResponse('Error interno del servidor', 500);
   }
 }
 

@@ -91,8 +91,8 @@ export async function GET(request: NextRequest): Promise<NextResponse<Invitation
     const formattedInvitations = invitations.map(invitation => ({
       id: invitation.id,
       organizationId: invitation.organizationId,
-      organizationName: invitation.organization.name,
-      inviterEmail: invitation.inviter?.email || 'No disponible',
+      organizationName: (invitation.organization as { name: string }).name,
+      inviterEmail: (invitation.inviter as { email: string } | undefined)?.email || 'No disponible',
       invitedEmail: invitation.invitedEmail,
       status: invitation.status,
       createdAt: invitation.createdAt.toISOString()

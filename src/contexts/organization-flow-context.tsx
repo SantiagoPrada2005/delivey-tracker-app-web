@@ -55,7 +55,7 @@ interface OrganizationFlowProviderProps {
 }
 
 export function OrganizationFlowProvider({ children }: OrganizationFlowProviderProps) {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { organizationStatus, checkOrganizationStatus, checkingStatus, currentOrganization } = useOrganization();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
@@ -94,7 +94,7 @@ export function OrganizationFlowProvider({ children }: OrganizationFlowProviderP
   }, [checkingStatus, organizationStatus]);
 
   const currentStep = getCurrentStep();
-  const isFlowActive = user && currentStep !== 'has-organization';
+  const isFlowActive = isAuthenticated && currentStep !== 'has-organization';
 
   console.log('🎯 OrganizationFlow - Estado calculado:', {
     user: !!user,

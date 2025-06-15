@@ -6,15 +6,15 @@ import { ResetPasswordForm } from '@/components/auth/reset-password-form';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function ResetPasswordPage() {
-  const { user, loading } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
 
   // Redireccionar si el usuario ya está autenticado
   useEffect(() => {
-    if (user && !loading) {
+    if (isAuthenticated && !loading) {
       router.push('/');
     }
-  }, [user, loading, router]);
+  }, [isAuthenticated, loading, router]);
 
   // Si está cargando, mostrar un estado de carga
   if (loading) {

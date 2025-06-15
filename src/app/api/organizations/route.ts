@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/auth-utils';
+import { requireAuth } from '@/lib/auth/utils';
 import { db } from '@/db';
 import { organizations, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -67,18 +67,13 @@ function generateSlug(name: string): string {
 export async function POST(request: NextRequest): Promise<NextResponse<CreateOrganizationResponse>> {
   try {
     // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    const authResult = await requireAuth(request);
     
-    if (!user) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Usuario no autenticado',
-          code: 'AUTH_REQUIRED'
-        },
-        { status: 401 }
-      );
+    if (authResult instanceof NextResponse) {
+      return authResult as NextResponse<CreateOrganizationResponse>;
     }
+    
+    const { user } = authResult;
 
     // Verificar que el usuario no tenga ya una organización
     const [existingUser] = await db.select({
@@ -173,7 +168,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreateOrg
 
     return NextResponse.json({
       success: true,
-      organization: newOrganization
+      organization: newOrganization as { id: number; name: string; slug: string; description: string | null; }
     });
     
   } catch (error) {
@@ -197,25 +192,20 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreateOrg
 export async function GET(request: NextRequest): Promise<NextResponse<ListOrganizationsResponse>> {
   try {
     // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    const authResult = await requireAuth(request);
     
-    if (!user) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Usuario no autenticado',
-          code: 'AUTH_REQUIRED'
-        },
-        { status: 401 }
-      );
+    if (authResult instanceof NextResponse) {
+      return authResult as NextResponse<ListOrganizationsResponse>;
     }
+    
+    const { user } = authResult; // eslint-disable-line @typescript-eslint/no-unused-vars
 
     // Usar la función existente para mantener compatibilidad
     const organizations = await getAllOrganizations();
 
     return NextResponse.json({
       success: true,
-      organizations
+      organizations: organizations as { id: number; name: string; slug: string; description: string | null; createdAt: Date; }[]
     });
     
   } catch (error) {

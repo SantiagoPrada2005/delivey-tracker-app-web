@@ -123,7 +123,7 @@ interface Producto {
   precio: number;
   stock: number;
 }
-
+/*
 interface EstadisticasEntrega {
   tiempoPromedioEntrega: number; // en minutos
   pedidosEntregadosATiempo: number;
@@ -132,7 +132,7 @@ interface EstadisticasEntrega {
   tiempoMaximoEntrega: number;
   tendenciaTiempoEntrega: 'mejorando' | 'empeorando' | 'estable';
 }
-
+*/
 // Función para obtener el color del badge según el estado
 function getEstadoBadge(estado: string) {
   switch (estado) {

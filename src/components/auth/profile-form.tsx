@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, Save, AlertCircle, CheckCircle, User } from 'lucide-react';
 
 export function ProfileForm() {
-  const { user, loading, error, updateUserProfile, updateUserEmail, updateUserPassword, clearError } = useAuth();
+  const { user, loading, error, updateUserProfile, updateUserEmail, updateUserPassword, clearError, isAuthenticated } = useAuth();
   
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -97,7 +97,7 @@ export function ProfileForm() {
     }
   };
 
-  if (!user) {
+  if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center p-8">
         <p>Debes iniciar sesión para ver tu perfil.</p>
@@ -113,6 +113,18 @@ export function ProfileForm() {
           <CardTitle className="text-xl font-bold">Información de perfil</CardTitle>
           <CardDescription>
             Actualiza tu información personal
+            {user?.role && (
+              <span className="block mt-1 text-sm font-medium text-blue-600">
+                Rol: {user.role === 'ADMIN' ? 'Administrador' : 
+                      user.role === 'MANAGER' ? 'Gerente' : 
+                      user.role === 'USER' ? 'Usuario' : user.role}
+              </span>
+            )}
+            {user?.organizationId && (
+              <span className="block mt-1 text-sm text-green-600">
+                Organización ID: {user.organizationId}
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>

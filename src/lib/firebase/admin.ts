@@ -100,11 +100,22 @@ function initializeFirebaseAdmin(): boolean {
  *
  * @async
  * @param {string} idToken - El Token ID JWT de Firebase.
+ * @param {boolean} checkRevoked - Si se debe verificar si el token ha sido revocado (opcional, por defecto false).
  * @returns {Promise<DecodedIdToken | null>} El token decodificado con la información del usuario
  *                                           si es válido, o `null` si es inválido, ha expirado,
  *                                           o si el SDK de Admin no está inicializado.
  */
-export const verifyFirebaseToken = async (idToken: string): Promise<DecodedIdToken | null> => {
+export const verifyFirebaseToken = async (idToken: string, checkRevoked: boolean = false): Promise<DecodedIdToken | null> => {
+  console.log('[Firebase Admin] Attempting to verify token, length:', idToken?.length || 0);
+  console.log('[Firebase Admin] Token preview:', idToken ? `${idToken.substring(0, 20)}...` : 'Empty token');
+  console.log('[Firebase Admin] Check revoked:', checkRevoked);
+  
+  // Verificar que el token no esté vacío o sea undefined
+  if (!idToken || typeof idToken !== 'string' || idToken.trim() === '') {
+    console.error('[Firebase Admin] Token is empty, undefined, or not a string');
+    return null;
+  }
+  
   // Intentar inicializar Firebase Admin si no está inicializado
   if (!initializeFirebaseAdmin()) {
     console.error(' [Firebase Admin] No se pudo inicializar el SDK para verificar el token.');
@@ -119,7 +130,9 @@ export const verifyFirebaseToken = async (idToken: string): Promise<DecodedIdTok
       return null;
     }
 
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    console.log('[Firebase Admin] About to call admin.auth().verifyIdToken()');
+    const decodedToken = await admin.auth().verifyIdToken(idToken, checkRevoked);
+    console.log('[Firebase Admin] Token verified successfully for UID:', decodedToken.uid);
     return decodedToken;
   } catch (error) {
     const err = error as Error & { code?: string }; // Firebase errors a menudo tienen un `code`
@@ -129,6 +142,118 @@ export const verifyFirebaseToken = async (idToken: string): Promise<DecodedIdTok
     // Puedes querer manejar códigos de error específicos de Firebase aquí
     // ej. 'auth/id-token-expired', 'auth/argument-error'
     return null;
+  }
+};
+
+/**
+ * Crea un token personalizado de Firebase para un usuario específico.
+ *
+ * @async
+ * @param {string} uid - El UID del usuario para quien crear el token.
+ * @param {object} additionalClaims - Claims adicionales para incluir en el token (opcional).
+ * @returns {Promise<string | null>} El token personalizado como string, o null si hay error.
+ */
+export const createCustomToken = async (uid: string, additionalClaims?: object): Promise<string | null> => {
+  // Intentar inicializar Firebase Admin si no está inicializado
+  if (!initializeFirebaseAdmin()) {
+    console.error(' [Firebase Admin] No se pudo inicializar el SDK para crear el token personalizado.');
+    return null;
+  }
+
+  try {
+    // Verificar que tenemos una app válida antes de acceder a auth()
+    const app = admin.app();
+    if (!app) {
+      console.error(' [Firebase Admin] No hay una app de Firebase Admin disponible.');
+      return null;
+    }
+
+    const customToken = await admin.auth().createCustomToken(uid, additionalClaims);
+    console.log(` [Firebase Admin] Token personalizado creado exitosamente para UID: ${uid}`);
+    return customToken;
+  } catch (error) {
+    const err = error as Error & { code?: string };
+    console.error(
+        ` [Firebase Admin] Error al crear token personalizado (Código: ${err.code || 'N/A'}): ${err.message}`
+    );
+    return null;
+  }
+};
+
+/**
+ * Obtiene información de un usuario por su UID.
+ *
+ * @async
+ * @param {string} uid - El UID del usuario.
+ * @returns {Promise<admin.auth.UserRecord | null>} El registro del usuario o null si hay error.
+ */
+export const getUserByUid = async (uid: string): Promise<admin.auth.UserRecord | null> => {
+  if (!initializeFirebaseAdmin()) {
+    console.error(' [Firebase Admin] No se pudo inicializar el SDK para obtener el usuario.');
+    return null;
+  }
+
+  try {
+    const userRecord = await admin.auth().getUser(uid);
+    return userRecord;
+  } catch (error) {
+    const err = error as Error & { code?: string };
+    console.error(
+        ` [Firebase Admin] Error al obtener usuario (Código: ${err.code || 'N/A'}): ${err.message}`
+    );
+    return null;
+  }
+};
+
+/**
+ * Obtiene información de un usuario por su email.
+ *
+ * @async
+ * @param {string} email - El email del usuario.
+ * @returns {Promise<admin.auth.UserRecord | null>} El registro del usuario o null si hay error.
+ */
+export const getUserByEmail = async (email: string): Promise<admin.auth.UserRecord | null> => {
+  if (!initializeFirebaseAdmin()) {
+    console.error(' [Firebase Admin] No se pudo inicializar el SDK para obtener el usuario.');
+    return null;
+  }
+
+  try {
+    const userRecord = await admin.auth().getUserByEmail(email);
+    return userRecord;
+  } catch (error) {
+    const err = error as Error & { code?: string };
+    console.error(
+        ` [Firebase Admin] Error al obtener usuario por email (Código: ${err.code || 'N/A'}): ${err.message}`
+    );
+    return null;
+  }
+};
+
+/**
+ * Establece claims personalizados para un usuario.
+ *
+ * @async
+ * @param {string} uid - El UID del usuario.
+ * @param {object | null} customUserClaims - Los claims personalizados a establecer.
+ * @returns {Promise<boolean>} true si fue exitoso, false en caso contrario.
+ */
+export const setCustomUserClaims = async (uid: string, customUserClaims: object | null): Promise<boolean> => {
+  if (!initializeFirebaseAdmin()) {
+    console.error(' [Firebase Admin] No se pudo inicializar el SDK para establecer claims.');
+    return false;
+  }
+
+  try {
+    await admin.auth().setCustomUserClaims(uid, customUserClaims);
+    console.log(` [Firebase Admin] Claims personalizados establecidos para UID: ${uid}`);
+    return true;
+  } catch (error) {
+    const err = error as Error & { code?: string };
+    console.error(
+        ` [Firebase Admin] Error al establecer claims (Código: ${err.code || 'N/A'}): ${err.message}`
+    );
+    return false;
   }
 };
 

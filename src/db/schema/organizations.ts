@@ -1,10 +1,7 @@
 // @app/db/shema/organizations.ts
 
 import { int, mysqlTable, varchar, mysqlEnum, timestamp, boolean, text } from "drizzle-orm/mysql-core";
-import { relations, type InferSelectModel, type InferInsertModel } from 'drizzle-orm';
-import { users } from './users';
-import { organizationInvitations } from './organizationInvitations';
-import { organizationRequests } from './organizationRequests';
+import { type InferSelectModel, type InferInsertModel } from 'drizzle-orm';
 
 /**
  * @Typedef - Schema de la tabla de las organizaciones para logica
@@ -30,8 +27,7 @@ export const organizations = mysqlTable("organizations",{
     isActive: boolean("is_active").default(true).notNull(),
     
     // Usuario creador/administrador principal
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    createdBy: int("created_by", { unsigned: true }).references((): any => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+    createdBy: int("created_by", { unsigned: true }),
     
     // Configuraciones de la organización
     allowInvitations: boolean("allow_invitations").default(true).notNull(),
@@ -42,23 +38,23 @@ export const organizations = mysqlTable("organizations",{
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 
-// Relaciones
-export const organizationsRelations = relations(organizations, ({ one, many }) => ({
-  creator: one(users, {
-    fields: [organizations.createdBy],
-    references: [users.id],
-    relationName: 'organizationCreator'
-  }),
-  members: many(users, {
-    relationName: 'organizationMembers'
-  }),
-  invitations: many(organizationInvitations, {
-    relationName: 'organizationInvitations'
-  }),
-  requests: many(organizationRequests, {
-    relationName: 'organizationRequests'
-  }),
-}));
+// Relaciones - se definirán en un archivo separado para evitar referencias circulares
+// export const organizationsRelations = relations(organizations, ({ one, many }) => ({
+//   creator: one(users, {
+//     fields: [organizations.createdBy],
+//     references: [users.id],
+//     relationName: 'organizationCreator'
+//   }),
+//   members: many(users, {
+//     relationName: 'organizationMembers'
+//   }),
+//   invitations: many(organizationInvitations, {
+//     relationName: 'organizationInvitations'
+//   }),
+//   requests: many(organizationRequests, {
+//     relationName: 'organizationRequests'
+//   }),
+// }));
 
 // Tipos inferidos usando las mejores prácticas de Drizzle ORM
 export type Organization = typeof organizations.$inferSelect;

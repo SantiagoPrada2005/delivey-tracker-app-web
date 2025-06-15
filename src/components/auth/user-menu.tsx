@@ -13,9 +13,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 
 export function UserMenu() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAuthenticated } = useAuth();
 
-  if (!user) {
+  if (!isAuthenticated || !user) {
     return null;
   }
 

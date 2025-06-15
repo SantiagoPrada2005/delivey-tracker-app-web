@@ -146,7 +146,7 @@ export async function PUT(
         message: 'Invitación aceptada correctamente',
         organization: {
           id: invitation.organizationId,
-          name: invitation.organization.name
+          name: (invitation.organization as { name: string }).name
         }
       });
     }

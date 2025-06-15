@@ -15,7 +15,7 @@ import { useRouter } from 'next/navigation';
 import { LogOut, User, Settings } from 'lucide-react';
 
 export function UserAuthNav() {
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut, loading, isAuthenticated } = useAuth();
   const router = useRouter();
 
   // Si está cargando, mostrar un estado de carga
@@ -29,7 +29,7 @@ export function UserAuthNav() {
   }
 
   // Si no hay usuario autenticado, mostrar botones de inicio de sesión y registro
-  if (!user) {
+  if (!isAuthenticated) {
     return (
       <div className="flex items-center gap-2">
         <Button
@@ -48,6 +48,11 @@ export function UserAuthNav() {
   }
 
   // Si hay usuario autenticado, mostrar menú desplegable con opciones
+  // Verificación adicional de seguridad para TypeScript
+  if (!user) {
+    return null;
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -63,6 +68,18 @@ export function UserAuthNav() {
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{user.displayName || 'Usuario'}</p>
             <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+            {user.role && (
+              <p className="text-xs leading-none text-blue-600 font-medium">
+                {user.role === 'ADMIN' ? 'Administrador' : 
+                 user.role === 'MANAGER' ? 'Gerente' : 
+                 user.role === 'USER' ? 'Usuario' : user.role}
+              </p>
+            )}
+            {user.organizationId && (
+              <p className="text-xs leading-none text-green-600">
+                Org: {user.organizationId}
+              </p>
+            )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

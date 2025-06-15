@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/auth-utils';
+import { requireAuth } from '@/lib/auth/utils';
 import { db } from '@/db';
 import { users, organizations, organizationInvitations, organizationRequests } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -55,19 +55,13 @@ interface OrganizationStatusResponse {
 export async function GET(request: NextRequest): Promise<NextResponse<OrganizationStatusResponse>> {
   try {
     // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    const authResult = await requireAuth(request);
     
-    if (!user) {
-      return NextResponse.json(
-        { 
-          success: false,
-          status: 'NO_ORGANIZATION' as const,
-          error: 'Usuario no autenticado',
-          code: 'AUTH_REQUIRED'
-        },
-        { status: 401 }
-      );
+    if (authResult instanceof NextResponse) {
+      return authResult as NextResponse<OrganizationStatusResponse>;
     }
+    
+    const { user } = authResult;
 
     // Obtener datos completos del usuario
     const [userRecord] = await db.select({

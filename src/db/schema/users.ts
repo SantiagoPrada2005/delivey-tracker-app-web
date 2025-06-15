@@ -1,11 +1,8 @@
 // src/db/schema/users.ts (o donde definas tus esquemas de Drizzle)
 
 import { mysqlTable, varchar, timestamp, text, boolean, index, mysqlEnum, int } from 'drizzle-orm/mysql-core';
-import { relations, type InferSelectModel, type InferInsertModel } from 'drizzle-orm';
+import { type InferSelectModel, type InferInsertModel } from 'drizzle-orm';
 //import { createInsertSchema, createSelectSchema } from 'drizzle-zod'; // Para validación con Zod
-import { organizations } from './organizations';
-import { organizationInvitations } from './organizationInvitations';
-import { organizationRequests } from './organizationRequests';
 
 /**
  * @typedef UserTableSchema
@@ -47,8 +44,7 @@ export const users = mysqlTable('users', {
   // --- Campos específicos de tu aplicación ---
   role: mysqlEnum('role', ['admin', 'service_client', 'delivery', 'N/A']).default('N/A').notNull(), //'admin', 'medico', 'asistente', 'N/A'
   isActive: boolean('is_active').default(true).notNull(),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  organizationId: int('organization_id', { unsigned: true }).references((): any => organizations.id, {onDelete: "cascade", onUpdate: "cascade"}),
+  organizationId: int('organization_id', { unsigned: true }),
   lastLoginAt: timestamp('last_login_at'),
 
   // --- Timestamps ---
@@ -62,29 +58,29 @@ export const users = mysqlTable('users', {
   index('phone_number_idx').on(table.phoneNumber),
 ]);
 
-// Relaciones
-export const usersRelations = relations(users, ({ one, many }) => ({
-  organization: one(organizations, {
-    fields: [users.organizationId],
-    references: [organizations.id],
-    relationName: 'organizationMembers'
-  }),
-  sentInvitations: many(organizationInvitations, {
-    relationName: 'inviter'
-  }),
-  receivedInvitations: many(organizationInvitations, {
-    relationName: 'accepter'
-  }),
-  organizationRequests: many(organizationRequests, {
-    relationName: 'requester'
-  }),
-  reviewedRequests: many(organizationRequests, {
-    relationName: 'reviewer'
-  }),
-  createdOrganizations: many(organizations, {
-    relationName: 'organizationCreator'
-  }),
-}));
+// Relaciones - se definirán en un archivo separado para evitar referencias circulares
+// export const usersRelations = relations(users, ({ one, many }) => ({
+//   organization: one(organizations, {
+//     fields: [users.organizationId],
+//     references: [organizations.id],
+//     relationName: 'organizationMembers'
+//   }),
+//   sentInvitations: many(organizationInvitations, {
+//     relationName: 'inviter'
+//   }),
+//   receivedInvitations: many(organizationInvitations, {
+//     relationName: 'accepter'
+//   }),
+//   organizationRequests: many(organizationRequests, {
+//     relationName: 'requester'
+//   }),
+//   reviewedRequests: many(organizationRequests, {
+//     relationName: 'reviewer'
+//   }),
+//   createdOrganizations: many(organizations, {
+//     relationName: 'organizationCreator'
+//   }),
+// }));
 
 // Esquemas Zod para validación (opcional pero muy recomendado)
 //export const insertUserSchema = createInsertSchema(users);

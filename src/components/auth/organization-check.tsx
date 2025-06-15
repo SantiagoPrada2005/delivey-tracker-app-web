@@ -28,7 +28,7 @@ interface OrganizationCheckProps {
 }
 
 export function OrganizationCheck({ children }: OrganizationCheckProps) {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
   const { checkingStatus } = useOrganization();
   const { currentStep, isFlowActive, refreshOrganizationStatus } = useOrganizationFlow();
   const pathname = usePathname();
@@ -59,33 +59,33 @@ export function OrganizationCheck({ children }: OrganizationCheckProps) {
     }
 
     // Si no hay usuario autenticado y no estamos cargando, redirigir a login
-    if (!user && !authLoading) {
+    if (!isAuthenticated && !authLoading) {
       console.log('👤 OrganizationCheck - No hay usuario autenticado, redirigiendo a login');
       router.push('/auth/login');
       return;
     }
 
     // Si hay usuario autenticado, verificar el estado de la organización
-    if (user && !authLoading && !hasChecked) {
+    if (isAuthenticated && !authLoading && !hasChecked) {
       console.log('🔄 OrganizationCheck - Refrescando estado de organización');
       refreshOrganizationStatus();
       setHasChecked(true);
       setIsInitialLoad(false);
     }
-  }, [user, authLoading, hasChecked, pathname, refreshOrganizationStatus, router]);
+  }, [user, authLoading, hasChecked, pathname, refreshOrganizationStatus, router, isAuthenticated]);
 
   // Resetear hasChecked cuando cambia el usuario
   useEffect(() => {
-    if (!user) {
+    if (!isAuthenticated) {
       setHasChecked(false);
     }
-  }, [user]);
+  }, [isAuthenticated]);
 
   // Verificar si la ruta actual está exenta
   const isExemptRoute = EXEMPT_ROUTES.some(route => pathname.startsWith(route));
 
   // Mostrar loading durante la carga inicial o mientras se verifica la organización
-  if (isInitialLoad || (user && !authLoading && checkingStatus && !isExemptRoute)) {
+  if (isInitialLoad || (isAuthenticated && !authLoading && checkingStatus && !isExemptRoute)) {
     console.log('⏳ OrganizationCheck - Mostrando loading');
     return (
       <div className="min-h-screen grid grid-rows-[auto_1fr] lg:grid-cols-[1fr_auto] lg:grid-rows-1 gap-4 p-4">
@@ -103,19 +103,19 @@ export function OrganizationCheck({ children }: OrganizationCheckProps) {
 
   // Si no hay usuario autenticado y no estamos en una ruta exenta, no mostrar nada
   // (la redirección ya se maneja en el useEffect)
-  if (!user && !isExemptRoute) {
+  if (!isAuthenticated && !isExemptRoute) {
     console.log('👤 OrganizationCheck - Sin usuario en ruta protegida, esperando redirección');
     return <OrganizationLoading />;
   }
 
   // Si no hay usuario autenticado pero estamos en una ruta exenta, mostrar el contenido
-  if (!user && isExemptRoute) {
+  if (!isAuthenticated && isExemptRoute) {
     console.log('👤 OrganizationCheck - Sin usuario en ruta exenta, mostrando children');
     return <>{children}</>;
   }
 
   // Renderizar flujos de organización para usuarios autenticados en rutas no exentas
-  if (user && !authLoading && isFlowActive && !isExemptRoute) {
+  if (isAuthenticated && !authLoading && isFlowActive && !isExemptRoute) {
     console.log('🎯 OrganizationCheck - Flujo activo:', currentStep);
     
     const renderWithLayout = (content: React.ReactNode) => (

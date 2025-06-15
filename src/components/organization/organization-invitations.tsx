@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrganizationFlow } from '@/contexts/organization-flow-context';
+import { authenticatedGet, authenticatedPut } from '@/lib/auth/client-utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
@@ -20,7 +21,7 @@ type Invitation = {
 };
 
 export function OrganizationInvitations() {
-  const { user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { refreshOrganizationStatus, completeFlow } = useOrganizationFlow();
   const router = useRouter();
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -30,18 +31,13 @@ export function OrganizationInvitations() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const fetchInvitations = useCallback(async () => {
-    if (!user) return;
+    if (!isAuthenticated) return;
 
     try {
       setLoading(true);
       setError(null);
       
-      const idToken = await user.getIdToken();
-      const response = await fetch('/api/organizations/invitations', {
-        headers: {
-          'Authorization': `Bearer ${idToken}`
-        }
-      });
+      const response = await authenticatedGet('/api/organizations/invitations');
 
       if (!response.ok) {
         const data = await response.json();
@@ -56,29 +52,21 @@ export function OrganizationInvitations() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     fetchInvitations();
   }, [fetchInvitations]);
 
   const handleInvitation = async (invitationId: string, action: 'accept' | 'reject') => {
-    if (!user) return;
+    if (!isAuthenticated) return;
     
     try {
       setProcessingId(invitationId);
       setError(null);
       setSuccessMessage(null);
       
-      const idToken = await user.getIdToken();
-      const response = await fetch(`/api/organizations/invitations/${invitationId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({ action })
-      });
+      const response = await authenticatedPut(`/api/organizations/invitations/${invitationId}`, { action });
 
       const data = await response.json();
 

@@ -12,6 +12,7 @@
 import { useState } from 'react';
 import { useOrganizationFlow } from '@/contexts/organization-flow-context';
 import { useRouter } from 'next/navigation';
+import { authenticatedPost } from '@/lib/auth/client-utils';
 
 /**
  * Interfaz para los datos de creación de organización
@@ -90,20 +91,11 @@ export function useCreateOrganization(): UseCreateOrganizationReturn {
     }));
 
     try {
-      // Realizar la petición a la API
-      // La autenticación se maneja automáticamente por el middleware
-      // que agrega los headers de usuario basados en el token de Firebase
-      const response = await fetch('/api/organizations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Incluir cookies para autenticación
-        body: JSON.stringify({
-          name: data.name.trim(),
-          description: data.description?.trim() || undefined,
-          slug: data.slug?.trim() || undefined,
-        }),
+      // Realizar la petición a la API con autenticación por token
+      const response = await authenticatedPost('/api/organizations', {
+        name: data.name.trim(),
+        description: data.description?.trim() || undefined,
+        slug: data.slug?.trim() || undefined,
       });
 
       // Parsear la respuesta
