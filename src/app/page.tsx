@@ -2,39 +2,139 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  Sidebar, 
+  SidebarContent, 
+  SidebarGroup, 
+  SidebarGroupContent, 
+  SidebarGroupLabel, 
+  SidebarMenu, 
+  SidebarMenuButton, 
+  SidebarMenuItem, 
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+  SidebarHeader,
+  SidebarFooter
+} from "@/components/ui/sidebar";
+import { Home, Package, Users, ShoppingBag, Truck, Settings, Bell } from "lucide-react";
+import { ThemeSwitcher } from "@/components/theme-switcher";
+import { UserAuthNav } from "@/components/auth/user-auth-nav";
 
-// Importar los nuevos componentes
-import { AppSidebar } from "@/components/dashboard/app-sidebar";
+// Importar los componentes del dashboard
 import { MetricsCards } from "@/components/dashboard/metrics-cards";
 import { OrderChart } from "@/components/dashboard/order-chart";
 import { StatusChart } from "@/components/dashboard/status-chart";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 
+// Definir los elementos del menú principal
+const mainMenuItems = [
+  { title: "Dashboard", url: "/", icon: Home },
+  { title: "Pedidos", url: "/pedidos", icon: Package, badge: 25 },
+  { title: "Clientes", url: "/clientes", icon: Users },
+  { title: "Productos", url: "/productos", icon: ShoppingBag },
+  { title: "Repartidores", url: "/repartidores", icon: Truck },
+  { title: "Configuración", url: "/configuracion", icon: Settings },
+];
+
+// Definir los elementos del menú de notificaciones
+const notificationItems = [
+  { title: "Nuevos pedidos", url: "/notificaciones/pedidos", count: 5 },
+  { title: "Alertas de stock", url: "/notificaciones/stock", count: 3 },
+  { title: "Mensajes", url: "/notificaciones/mensajes", count: 2 },
+];
+
 export default function Dashboard() {
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Sidebar mejorado */}
-      <div className="hidden lg:block">
-        <AppSidebar />
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        {/* Mobile Header */}
-        <div className="flex h-14 items-center justify-between border-b px-4 lg:hidden">
-          <h1 className="text-xl font-semibold">Dashboard</h1>
-          {/* Mantener el MobileSidebar existente */}
-          <div className="lg:hidden">
-            <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 w-10">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                <line x1="4" x2="20" y1="12" y2="12"></line>
-                <line x1="4" x2="20" y1="6" y2="6"></line>
-                <line x1="4" x2="20" y1="18" y2="18"></line>
-              </svg>
-            </button>
+    <SidebarProvider>
+      <Sidebar collapsible="icon">
+        <SidebarHeader>
+          <div className="flex h-14 items-center justify-between px-4 font-semibold transition-all duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
+            <h1 className="text-xl transition-all duration-200 ease-linear group-data-[collapsible=icon]:hidden">Administrador de Pedidos</h1>
+            <ThemeSwitcher />
           </div>
-        </div>
+          
+          {/* Perfil de usuario */}
+          <div className="p-4 border-b transition-all duration-200 ease-linear group-data-[collapsible=icon]:h-0 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:overflow-hidden group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:border-0">
+            <UserAuthNav />
+          </div>
+        </SidebarHeader>
+        
+        <SidebarContent>
+          {/* Menú principal */}
+          <SidebarGroup>
+            <SidebarGroupLabel>Navegación</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {mainMenuItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <a href={item.url} className="flex justify-between w-full">
+                        <span className="flex items-center">
+                          <item.icon className="mr-2 h-4 w-4" />
+                          <span>{item.title}</span>
+                        </span>
+                        {item.badge && (
+                          <Badge variant="secondary" className="ml-auto">
+                            {item.badge}
+                          </Badge>
+                        )}
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          
+          {/* Sección de notificaciones */}
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              <div className="flex items-center">
+                <Bell className="mr-2 h-4 w-4" />
+                <span>Notificaciones</span>
+              </div>
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {notificationItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <a href={item.url} className="flex justify-between w-full">
+                        <span>{item.title}</span>
+                        {item.count > 0 && (
+                          <Badge variant="destructive" className="ml-auto">
+                            {item.count}
+                          </Badge>
+                        )}
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+        
+        <SidebarFooter>
+          <div className="p-4 text-xs text-muted-foreground transition-all duration-200 ease-linear group-data-[collapsible=icon]:h-0 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:overflow-hidden group-data-[collapsible=icon]:p-0">
+            © 2024 Delivery Tracker
+          </div>
+        </SidebarFooter>
+      </Sidebar>
+      
+      <SidebarInset>
+        {/* Header con trigger para mobile */}
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold">Dashboard</h1>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Última actualización: Hoy, 10:30 AM</span>
+          </div>
+        </header>
         
         <div className="p-6">
           <div className="space-y-6">
@@ -214,7 +314,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
