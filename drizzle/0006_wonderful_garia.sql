@@ -1,0 +1,2 @@
+ALTER TABLE `repartidores` ADD `user_id` int unsigned NOT NULL;--> statement-breakpoint
+ALTER TABLE `repartidores` ADD CONSTRAINT `repartidores_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;

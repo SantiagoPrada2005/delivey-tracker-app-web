@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRepartidores } from '@/hooks/useRepartidores';
+import { useAuth } from '@/hooks/useAuth';
 import {
   Sidebar,
   SidebarContent,
@@ -24,7 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Truck, Search, ArrowUpDown, MoreHorizontal, Phone, MapPin, Calendar, Star } from "lucide-react";
+import { Truck, Search, ArrowUpDown, MoreHorizontal, Phone, Calendar } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -41,97 +43,55 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-// Datos de ejemplo para repartidores
-const repartidores = [
-  {
-    id: "REP-001",
-    nombre: "Carlos Gómez",
-    avatar: "",
-    telefono: "555-123-4567",
-    zona: "Centro",
-    estado: "activo",
-    pedidosHoy: 8,
-    pedidosTotal: 245,
-    valoracion: 4.8,
-    fechaAlta: "2023-01-15"
-  },
-  {
-    id: "REP-002",
-    nombre: "Ana Martínez",
-    avatar: "",
-    telefono: "555-234-5678",
-    zona: "Norte",
-    estado: "activo",
-    pedidosHoy: 6,
-    pedidosTotal: 189,
-    valoracion: 4.9,
-    fechaAlta: "2023-02-20"
-  },
-  {
-    id: "REP-003",
-    nombre: "Luis Rodríguez",
-    avatar: "",
-    telefono: "555-345-6789",
-    zona: "Sur",
-    estado: "inactivo",
-    pedidosHoy: 0,
-    pedidosTotal: 156,
-    valoracion: 4.5,
-    fechaAlta: "2023-03-10"
-  },
-  {
-    id: "REP-004",
-    nombre: "Pedro Díaz",
-    avatar: "",
-    telefono: "555-456-7890",
-    zona: "Este",
-    estado: "activo",
-    pedidosHoy: 5,
-    pedidosTotal: 178,
-    valoracion: 4.7,
-    fechaAlta: "2023-02-05"
-  },
-  {
-    id: "REP-005",
-    nombre: "Elena Castro",
-    avatar: "",
-    telefono: "555-567-8901",
-    zona: "Oeste",
-    estado: "activo",
-    pedidosHoy: 7,
-    pedidosTotal: 210,
-    valoracion: 4.6,
-    fechaAlta: "2023-01-25"
-  },
-];
-
-// Función para obtener el color del badge según el estado
-function getEstadoBadge(estado: string) {
-  switch (estado) {
-    case "activo":
-      return <Badge className="bg-green-500">Activo</Badge>;
-    case "inactivo":
-      return <Badge variant="secondary">Inactivo</Badge>;
-    case "en_ruta":
-      return <Badge className="bg-blue-500">En ruta</Badge>;
-    default:
-      return <Badge>{estado}</Badge>;
-  }
+// Función para obtener el nombre completo del repartidor
+function getNombreCompleto(repartidor: { nombre: string; apellido: string }) {
+  return `${repartidor.nombre} ${repartidor.apellido}`;
 }
 
 // Función para obtener las iniciales del nombre
-function getInitials(name: string) {
-  return name
-    .split(' ')
-    .map(part => part[0])
-    .join('')
-    .toUpperCase();
+function getInitials(nombre: string, apellido: string) {
+  return `${nombre.charAt(0)}${apellido.charAt(0)}`.toUpperCase();
+}
+
+// Función para obtener el color del badge según el estado
+function getEstadoBadge(disponible: boolean) {
+  if (disponible) {
+    return <Badge className="bg-green-500">Disponible</Badge>;
+  } else {
+    return <Badge variant="secondary">No disponible</Badge>;
+  }
 }
 
 export default function RepartidoresPage() {
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { 
+    repartidores, 
+    loading, 
+    error, 
+    fetchRepartidores, 
+    updateRepartidor, 
+    deleteRepartidor,
+    clearError 
+  } = useRepartidores();
+  
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTab, setSelectedTab] = useState("todos");
+
+  // Cargar repartidores al montar el componente
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      fetchRepartidores();
+    }
+  }, [isAuthenticated, authLoading, fetchRepartidores]);
+
+  // Limpiar errores cuando se desmonta el componente
+  useEffect(() => {
+    return () => {
+      clearError();
+    };
+  }, [clearError]);
 
   // Definir los elementos del menú principal
   const mainMenuItems = [
@@ -150,13 +110,43 @@ export default function RepartidoresPage() {
     { title: "Mensajes", url: "/notificaciones/mensajes", count: 2 },
   ];
 
-  // Filtrar repartidores según el término de búsqueda
+  // Filtrar repartidores según el término de búsqueda y tab seleccionado
   const filteredRepartidores = repartidores.filter(repartidor => {
-    return searchTerm === "" || 
+    const matchesSearch = searchTerm === "" || 
       repartidor.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      repartidor.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      repartidor.zona.toLowerCase().includes(searchTerm.toLowerCase());
+      repartidor.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (repartidor.email && repartidor.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (repartidor.telefono && repartidor.telefono.includes(searchTerm));
+    
+    const matchesTab = selectedTab === "todos" || 
+      (selectedTab === "disponibles" && repartidor.disponible) ||
+      (selectedTab === "no-disponibles" && !repartidor.disponible);
+    
+    return matchesSearch && matchesTab;
   });
+
+  // Mostrar loading si está autenticando o cargando datos
+  if (authLoading || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Cargando repartidores...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar mensaje si no está autenticado
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-muted-foreground">Debes iniciar sesión para ver esta página.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -254,38 +244,41 @@ export default function RepartidoresPage() {
                 <CardTitle className="text-sm font-medium">Total de Repartidores</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">12</div>
-                <p className="text-xs text-muted-foreground">+2 respecto al mes anterior</p>
+                <div className="text-2xl font-bold">{repartidores.length}</div>
+                <p className="text-xs text-muted-foreground">Repartidores registrados</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Repartidores Activos</CardTitle>
+                <CardTitle className="text-sm font-medium">Repartidores Disponibles</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">10</div>
-                <p className="text-xs text-muted-foreground">83.3% del total</p>
+                <div className="text-2xl font-bold">{repartidores.filter(r => r.disponible).length}</div>
+                <p className="text-xs text-muted-foreground">{repartidores.length > 0 ? Math.round((repartidores.filter(r => r.disponible).length / repartidores.length) * 100) : 0}% del total</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Pedidos Entregados Hoy</CardTitle>
+                <CardTitle className="text-sm font-medium">No Disponibles</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">45</div>
-                <p className="text-xs text-muted-foreground">+12% respecto a ayer</p>
+                <div className="text-2xl font-bold">{repartidores.filter(r => !r.disponible).length}</div>
+                <p className="text-xs text-muted-foreground">Repartidores no disponibles</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Valoración Promedio</CardTitle>
+                <CardTitle className="text-sm font-medium">Registrados Hoy</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center">
-                  <div className="text-2xl font-bold mr-2">4.7</div>
-                  <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                <div className="text-2xl font-bold">
+                  {repartidores.filter(r => {
+                    const today = new Date().toISOString().split('T')[0];
+                    const createdDate = r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : '';
+                    return createdDate === today;
+                  }).length}
                 </div>
-                <p className="text-xs text-muted-foreground">+0.2 respecto al mes anterior</p>
+                <p className="text-xs text-muted-foreground">Nuevos registros</p>
               </CardContent>
             </Card>
           </div>
@@ -296,18 +289,18 @@ export default function RepartidoresPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Buscar por nombre, ID o zona..."
+                placeholder="Buscar por nombre, apellido, email o teléfono..."
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <div>
-              <Tabs defaultValue="todos">
+              <Tabs value={selectedTab} onValueChange={setSelectedTab}>
                 <TabsList>
-                  <TabsTrigger value="todos">Todos</TabsTrigger>
-                  <TabsTrigger value="activos">Activos</TabsTrigger>
-                  <TabsTrigger value="inactivos">Inactivos</TabsTrigger>
+                  <TabsTrigger value="todos">Todos ({repartidores.length})</TabsTrigger>
+                  <TabsTrigger value="disponibles">Disponibles ({repartidores.filter(r => r.disponible).length})</TabsTrigger>
+                  <TabsTrigger value="no-disponibles">No disponibles ({repartidores.filter(r => !r.disponible).length})</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
@@ -331,76 +324,112 @@ export default function RepartidoresPage() {
                     </TableHead>
                     <TableHead>Repartidor</TableHead>
                     <TableHead>Contacto</TableHead>
-                    <TableHead>Zona</TableHead>
+                    <TableHead>Email</TableHead>
                     <TableHead>Estado</TableHead>
-                    <TableHead>Pedidos Hoy</TableHead>
-                    <TableHead>Valoración</TableHead>
+                    <TableHead>Fecha de Registro</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRepartidores.map((repartidor) => (
-                    <TableRow key={repartidor.id}>
-                      <TableCell className="font-medium">{repartidor.id}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage src={repartidor.avatar} />
-                            <AvatarFallback>{getInitials(repartidor.nombre)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{repartidor.nombre}</div>
-                            <div className="text-xs text-muted-foreground flex items-center">
-                              <Calendar className="mr-1 h-3 w-3" />
-                              Desde {repartidor.fechaAlta}
+                  {filteredRepartidores.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8">
+                        <div className="text-muted-foreground">
+                          {error ? (
+                            <div className="text-red-500">
+                              Error: {error}
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="ml-2"
+                                onClick={() => fetchRepartidores()}
+                              >
+                                Reintentar
+                              </Button>
                             </div>
-                          </div>
+                          ) : (
+                            "No se encontraron repartidores"
+                          )}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
-                          {repartidor.telefono}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
-                          {repartidor.zona}
-                        </div>
-                      </TableCell>
-                      <TableCell>{getEstadoBadge(repartidor.estado)}</TableCell>
-                      <TableCell>{repartidor.pedidosHoy}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          {repartidor.valoracion}
-                          <Star className="ml-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                            <DropdownMenuItem>Ver perfil</DropdownMenuItem>
-                            <DropdownMenuItem>Editar información</DropdownMenuItem>
-                            <DropdownMenuItem>Ver pedidos asignados</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {repartidor.estado === "activo" ? (
-                              <DropdownMenuItem className="text-amber-600">Marcar como inactivo</DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem className="text-green-600">Marcar como activo</DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem className="text-red-600">Eliminar repartidor</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    filteredRepartidores.map((repartidor) => (
+                      <TableRow key={repartidor.id}>
+                        <TableCell className="font-medium">#{repartidor.id}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarFallback>{getInitials(repartidor.nombre, repartidor.apellido)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">{getNombreCompleto(repartidor)}</div>
+                              <div className="text-xs text-muted-foreground">
+                                ID: {repartidor.id}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
+                            {repartidor.telefono}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">{repartidor.email}</div>
+                        </TableCell>
+                        <TableCell>{getEstadoBadge(repartidor.disponible)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center text-sm">
+                            <Calendar className="mr-1 h-3 w-3 text-muted-foreground" />
+                            {repartidor.createdAt ? new Date(repartidor.createdAt).toLocaleDateString() : 'N/A'}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                              <DropdownMenuItem>Ver perfil</DropdownMenuItem>
+                              <DropdownMenuItem>Editar información</DropdownMenuItem>
+                              <DropdownMenuItem>Ver pedidos asignados</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              {repartidor.disponible ? (
+                                <DropdownMenuItem 
+                                  className="text-amber-600"
+                                  onClick={() => updateRepartidor(repartidor.id.toString(), { disponible: false })}
+                                >
+                                  Marcar como no disponible
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem 
+                                  className="text-green-600"
+                                  onClick={() => updateRepartidor(repartidor.id.toString(), { disponible: true })}
+                                >
+                                  Marcar como disponible
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem 
+                                className="text-red-600"
+                                onClick={() => {
+                                  if (confirm('¿Estás seguro de que quieres eliminar este repartidor?')) {
+                                    deleteRepartidor(repartidor.id.toString());
+                                  }
+                                }}
+                              >
+                                Eliminar repartidor
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
