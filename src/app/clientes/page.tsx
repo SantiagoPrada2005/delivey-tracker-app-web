@@ -46,7 +46,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Dialog,
@@ -69,13 +69,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 
 // Importar los componentes del sidebar
@@ -85,23 +78,8 @@ import { OrganizationSelector } from "@/components/organization-selector"
 import { useOrganization } from "@/hooks/useOrganization"
 import { useClientes } from "@/hooks/useClientes"
 
-// Definir el tipo de datos para clientes
-export type Cliente = {
-  id: string
-  nombre: string
-  email: string
-  telefono: string
-  empresa: string
-  estado: "activo" | "inactivo" | "pendiente"
-  fechaRegistro: string
-  totalPedidos: number
-  valorTotal: number
-  ciudad: string
-  organizationId: number
-}
-
-// Tipo para los datos del formulario
-export type ClienteFormData = Omit<Cliente, 'id' | 'fechaRegistro' | 'totalPedidos' | 'valorTotal'>
+// Importar los tipos desde el hook
+import { Cliente, ClienteFormData } from '@/hooks/useClientes'
 
 // Componente para el formulario de cliente
 function ClienteForm({ 
@@ -119,17 +97,16 @@ function ClienteForm({
   const { selectedOrganizationId } = useOrganization()
   const [formData, setFormData] = React.useState<ClienteFormData>({
     nombre: cliente?.nombre || '',
+    apellido: cliente?.apellido || '',
     email: cliente?.email || '',
     telefono: cliente?.telefono || '',
-    empresa: cliente?.empresa || '',
-    estado: cliente?.estado || 'activo',
-    ciudad: cliente?.ciudad || '',
+    direccion: cliente?.direccion || '',
     organizationId: cliente?.organizationId || selectedOrganizationId || 1
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.nombre || !formData.email || !formData.telefono) {
+    if (!formData.nombre || !formData.telefono) {
       toast({
         title: "Error",
         description: "Por favor completa todos los campos requeridos",
@@ -149,24 +126,33 @@ function ClienteForm({
             id="nombre"
             value={formData.nombre}
             onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-            placeholder="Nombre completo"
+            placeholder="Nombre"
             required
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="email">Email *</Label>
+          <Label htmlFor="apellido">Apellido *</Label>
+          <Input
+            id="apellido"
+            value={formData.apellido}
+            onChange={(e) => setFormData({ ...formData, apellido: e.target.value })}
+            placeholder="Apellido"
+            required
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
           <Input
             id="email"
             type="email"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             placeholder="correo@ejemplo.com"
-            required
           />
         </div>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="telefono">Teléfono *</Label>
           <Input
@@ -177,40 +163,17 @@ function ClienteForm({
             required
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="empresa">Empresa</Label>
-          <Input
-            id="empresa"
-            value={formData.empresa}
-            onChange={(e) => setFormData({ ...formData, empresa: e.target.value })}
-            placeholder="Nombre de la empresa"
-          />
-        </div>
       </div>
-      
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="ciudad">Ciudad</Label>
-          <Input
-            id="ciudad"
-            value={formData.ciudad}
-            onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
-            placeholder="Ciudad"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="estado">Estado</Label>
-          <Select value={formData.estado} onValueChange={(value: 'activo' | 'inactivo' | 'pendiente') => setFormData({ ...formData, estado: value })}>
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccionar estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="activo">Activo</SelectItem>
-              <SelectItem value="pendiente">Pendiente</SelectItem>
-              <SelectItem value="inactivo">Inactivo</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="direccion">Dirección *</Label>
+        <Input
+          id="direccion"
+          value={formData.direccion}
+          onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
+          placeholder="Dirección completa"
+          required
+        />
       </div>
       
       <DialogFooter>
@@ -246,49 +209,30 @@ function ClienteDetails({ cliente }: { cliente: Cliente }) {
           <p className="text-sm">{cliente.telefono}</p>
         </div>
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Empresa</Label>
-          <p className="text-sm">{cliente.empresa || 'N/A'}</p>
+          <Label className="text-sm font-medium text-muted-foreground">Apellido</Label>
+          <p className="text-sm">{cliente.apellido || 'N/A'}</p>
         </div>
       </div>
       
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Ciudad</Label>
-          <p className="text-sm">{cliente.ciudad || 'N/A'}</p>
+          <Label className="text-sm font-medium text-muted-foreground">Dirección</Label>
+          <p className="text-sm">{cliente.direccion || 'N/A'}</p>
         </div>
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Estado</Label>
-          <Badge
-            variant={
-              cliente.estado === "activo"
-                ? "default"
-                : cliente.estado === "pendiente"
-                ? "secondary"
-                : "destructive"
-            }
-          >
-            {cliente.estado.charAt(0).toUpperCase() + cliente.estado.slice(1)}
-          </Badge>
+          <Label className="text-sm font-medium text-muted-foreground">Organización ID</Label>
+          <p className="text-sm">{cliente.organizationId}</p>
         </div>
       </div>
       
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Fecha de Registro</Label>
-          <p className="text-sm">{new Date(cliente.fechaRegistro).toLocaleDateString('es-CO')}</p>
+          <Label className="text-sm font-medium text-muted-foreground">Fecha de Creación</Label>
+          <p className="text-sm">{cliente.createdAt ? new Date(cliente.createdAt).toLocaleDateString('es-CO') : 'N/A'}</p>
         </div>
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Total Pedidos</Label>
-          <p className="text-sm font-bold">{cliente.totalPedidos}</p>
-        </div>
-        <div>
-          <Label className="text-sm font-medium text-muted-foreground">Valor Total</Label>
-          <p className="text-sm font-bold">
-            {new Intl.NumberFormat("es-CO", {
-              style: "currency",
-              currency: "COP",
-            }).format(cliente.valorTotal)}
-          </p>
+          <Label className="text-sm font-medium text-muted-foreground">Última Actualización</Label>
+          <p className="text-sm">{cliente.updatedAt ? new Date(cliente.updatedAt).toLocaleDateString('es-CO') : 'N/A'}</p>
         </div>
       </div>
     </div>
@@ -369,7 +313,7 @@ export default function ClientesPage() {
     if (!selectedCliente) return
     
     try {
-      const success = await updateCliente(selectedCliente.id, formData)
+      const success = await updateCliente(selectedCliente.id.toString(), formData)
       
       if (success) {
         setIsEditDialogOpen(false)
@@ -398,7 +342,7 @@ export default function ClientesPage() {
   
   const handleDeleteCliente = async (cliente: Cliente) => {
     try {
-      const success = await deleteCliente(cliente.id)
+      const success = await deleteCliente(cliente.id.toString())
       
       if (success) {
         toast({
@@ -452,7 +396,7 @@ export default function ClientesPage() {
         return (
           <div className="flex flex-col">
             <div className="font-medium">{cliente.nombre}</div>
-            <div className="text-sm text-muted-foreground">{cliente.empresa}</div>
+            <div className="text-sm text-muted-foreground">{cliente.apellido}</div>
           </div>
         )
       },
@@ -469,67 +413,11 @@ export default function ClientesPage() {
       header: "Teléfono",
     },
     {
-      accessorKey: "ciudad",
-      header: "Ciudad",
-    },
-    {
-      accessorKey: "estado",
-      header: "Estado",
-      cell: ({ row }) => {
-        const estado = row.getValue("estado") as string
-        return (
-          <Badge
-            variant={
-              estado === "activo"
-                ? "default"
-                : estado === "pendiente"
-                ? "secondary"
-                : "destructive"
-            }
-          >
-            {estado.charAt(0).toUpperCase() + estado.slice(1)}
-          </Badge>
-        )
-      },
-    },
-    {
-      accessorKey: "totalPedidos",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Pedidos
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        )
-      },
-      cell: ({ row }) => {
-        return <div className="text-center">{row.getValue("totalPedidos")}</div>
-      },
-    },
-    {
-      accessorKey: "valorTotal",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Valor Total
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        )
-      },
-      cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("valorTotal"))
-        const formatted = new Intl.NumberFormat("es-CO", {
-          style: "currency",
-          currency: "COP",
-        }).format(amount)
-        return <div className="text-right font-medium">{formatted}</div>
-      },
+      accessorKey: "direccion",
+      header: "Dirección",
+      cell: ({ row }) => (
+        <div className="max-w-[200px] truncate">{row.getValue("direccion")}</div>
+      ),
     },
     {
       id: "actions",
@@ -548,7 +436,7 @@ export default function ClientesPage() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Acciones</DropdownMenuLabel>
               <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(cliente.id)}
+                onClick={() => navigator.clipboard.writeText(cliente.id.toString())}
               >
                 Copiar ID del cliente
               </DropdownMenuItem>
@@ -620,9 +508,8 @@ export default function ClientesPage() {
   
   // Calcular métricas
   const totalClientes = data.length
-  const clientesActivos = data.filter(cliente => cliente.estado === "activo").length
-  const clientesPendientes = data.filter(cliente => cliente.estado === "pendiente").length
-  const valorTotalClientes = data.reduce((sum, cliente) => sum + cliente.valorTotal, 0)
+  const clientesConEmail = data.filter(cliente => cliente.email).length
+  const clientesSinEmail = data.filter(cliente => !cliente.email).length
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -721,14 +608,14 @@ export default function ClientesPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Clientes Activos
+                  Clientes con Email
                 </CardTitle>
                 <UserCheck className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{clientesActivos}</div>
+                <div className="text-2xl font-bold">{clientesConEmail}</div>
                 <p className="text-xs text-muted-foreground">
-                  {totalClientes > 0 ? ((clientesActivos / totalClientes) * 100).toFixed(1) : 0}% del total
+                  {totalClientes > 0 ? ((clientesConEmail / totalClientes) * 100).toFixed(1) : 0}% del total
                 </p>
               </CardContent>
             </Card>
@@ -736,14 +623,14 @@ export default function ClientesPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Clientes Pendientes
+                  Clientes sin Email
                 </CardTitle>
                 <UserX className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{clientesPendientes}</div>
+                <div className="text-2xl font-bold">{clientesSinEmail}</div>
                 <p className="text-xs text-muted-foreground">
-                  Requieren seguimiento
+                  Requieren actualización de datos
                 </p>
               </CardContent>
             </Card>
@@ -751,20 +638,14 @@ export default function ClientesPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Valor Total
+                  Total Clientes
                 </CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {new Intl.NumberFormat("es-CO", {
-                    style: "currency",
-                    currency: "COP",
-                    minimumFractionDigits: 0,
-                  }).format(valorTotalClientes)}
-                </div>
+                <div className="text-2xl font-bold">{totalClientes}</div>
                 <p className="text-xs text-muted-foreground">
-                  Valor acumulado de pedidos
+                  Clientes registrados
                 </p>
               </CardContent>
             </Card>

@@ -15,20 +15,25 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from './useAuth';
 
 export interface Cliente {
-  id: string;
+  id: number;
   nombre: string;
-  email: string;
+  apellido: string;
+  email?: string;
   telefono: string;
-  empresa: string;
-  estado: 'activo' | 'inactivo' | 'pendiente';
-  fechaRegistro: string;
-  totalPedidos: number;
-  valorTotal: number;
-  ciudad: string;
+  direccion: string;
   organizationId: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export type ClienteFormData = Omit<Cliente, 'id' | 'totalPedidos' | 'valorTotal' | 'fechaRegistro'>;
+export interface ClienteFormData {
+  nombre: string;
+  apellido: string;
+  email?: string;
+  telefono: string;
+  direccion: string;
+  organizationId: number;
+}
 
 interface UseClientesState {
   clientes: Cliente[];
