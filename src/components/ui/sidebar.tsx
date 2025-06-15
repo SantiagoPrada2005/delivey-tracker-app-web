@@ -157,13 +157,45 @@ function Sidebar({
   collapsible = "offcanvas",
   className,
   children,
+  breakPoint = "sm", // NUEVO: breakpoint para colapsar automáticamente
+  transitionDuration = 300, // NUEVO: duración de la animación
   ...props
 }: React.ComponentProps<"div"> & {
   side?: "left" | "right"
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
+  breakPoint?: "xs" | "sm" | "md" | "lg" | "xl" | "xxl" | "all"
+  transitionDuration?: number
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  // NUEVO: efecto para colapsar automáticamente en móvil según breakpoint
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const handleResize = () => {
+        const breakpoints = {
+          xs: 480,
+          sm: 640,
+          md: 768,
+          lg: 1024,
+          xl: 1280,
+          xxl: 1536,
+        } as const;
+        let bp: number;
+        if (breakPoint === "all") {
+          bp = Number.POSITIVE_INFINITY; // nunca colapsa automáticamente
+        } else if (breakPoint in breakpoints) {
+          bp = breakpoints[breakPoint as keyof typeof breakpoints];
+        } else {
+          bp = 640; // valor por defecto
+        }
+        if (window.innerWidth <= bp) {
+          setOpenMobile(false)
+        }
+      }
+      window.addEventListener("resize", handleResize)
+      return () => window.removeEventListener("resize", handleResize)
+    }
+  }, [breakPoint, setOpenMobile])
 
   if (collapsible === "none") {
     return (
@@ -183,16 +215,23 @@ function Sidebar({
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+        {/* NUEVO: Backdrop para cerrar tocando fuera */}
+        {openMobile && (
+          <div
+            onClick={() => setOpenMobile(false)}
+            className="fixed inset-0 z-40 bg-black/40 md:hidden"
+            aria-label="Cerrar sidebar"
+          />
+        )}
         <SheetContent
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
-          style={
-            {
-              "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-            } as React.CSSProperties
-          }
+          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden transition-all"
+          style={{
+            "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+            transitionDuration: `${transitionDuration}ms`,
+          } as React.CSSProperties}
           side={side}
         >
           <SheetHeader className="sr-only">
@@ -225,6 +264,7 @@ function Sidebar({
             ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
             : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)"
         )}
+        style={{ transitionDuration: `${transitionDuration}ms` }} // NUEVO: animación
       />
       <div
         data-slot="sidebar-container"
@@ -233,12 +273,12 @@ function Sidebar({
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-          // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
             : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
           className
         )}
+        style={{ transitionDuration: `${transitionDuration}ms` }} // NUEVO: animación
         {...props}
       >
         <div
