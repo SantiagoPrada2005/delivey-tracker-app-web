@@ -33,7 +33,7 @@ export interface AuthenticatedUser {
  * @param request - La request de Next.js (opcional, si no se proporciona usa headers())
  * @returns La información del usuario autenticado o null si no está disponible
  */
-export async function getAuthenticatedUser(request?: NextRequest): Promise<AuthenticatedUser | null> {
+ export async function getAuthenticatedUser(request?: NextRequest): Promise<AuthenticatedUser | null> {
   try {
     let headersList;
     

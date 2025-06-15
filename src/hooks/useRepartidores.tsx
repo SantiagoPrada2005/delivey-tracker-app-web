@@ -16,6 +16,7 @@ import { useAuth } from './useAuth';
 
 export interface Repartidor {
   id: number;
+  userId: number;
   nombre: string;
   apellido: string;
   telefono: string;
@@ -24,14 +25,29 @@ export interface Repartidor {
   organizationId: number;
   createdAt?: string;
   updatedAt?: string;
+  // Información del usuario asociado
+  userEmail?: string;
+  userDisplayName?: string;
+  userRole?: string;
+  userIsActive?: boolean;
 }
 
 export interface RepartidorFormData {
+  userId: number;
   nombre: string;
   apellido: string;
   telefono: string;
   email?: string;
   disponible?: boolean;
+}
+
+export interface AvailableUser {
+  id: number;
+  firebaseUid: string;
+  email: string;
+  displayName?: string;
+  role: string;
+  isActive: boolean;
 }
 
 interface UseRepartidoresState {
@@ -46,6 +62,7 @@ interface UseRepartidoresReturn extends UseRepartidoresState {
   updateRepartidor: (id: string, repartidorData: Partial<RepartidorFormData>) => Promise<boolean>;
   deleteRepartidor: (id: string) => Promise<boolean>;
   getRepartidorById: (id: string) => Promise<Repartidor | null>;
+  getAvailableUsers: () => Promise<AvailableUser[]>;
   refreshRepartidores: () => Promise<void>;
   clearError: () => void;
 }
@@ -278,6 +295,38 @@ export const useRepartidores = (): UseRepartidoresReturn => {
     await fetchRepartidores();
   }, [fetchRepartidores]);
 
+  // Obtener usuarios disponibles para asignar como repartidores
+  const getAvailableUsers = useCallback(async (): Promise<AvailableUser[]> => {
+    try {
+      setState(prev => ({ ...prev, loading: true, error: null }));
+      
+      const response = await authenticatedFetch('/api/repartidores?available-users=true');
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      setState(prev => ({ ...prev, loading: false }));
+      
+      // La API devuelve { success: true, users: [...] }
+      if (data.success && data.users) {
+        return data.users;
+      }
+      return data.users || [];
+      
+    } catch (error) {
+      console.error('[useRepartidores] Error al obtener usuarios disponibles:', error);
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: error instanceof Error ? error.message : 'Error al obtener usuarios disponibles'
+      }));
+      return [];
+    }
+  }, [authenticatedFetch]);
+
   // Limpiar errores
   const clearError = useCallback(() => {
     setState(prev => ({ ...prev, error: null }));
@@ -297,6 +346,7 @@ export const useRepartidores = (): UseRepartidoresReturn => {
     updateRepartidor,
     deleteRepartidor,
     getRepartidorById,
+    getAvailableUsers,
     refreshRepartidores,
     clearError
   };

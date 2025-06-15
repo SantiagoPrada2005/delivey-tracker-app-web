@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRepartidores } from '@/hooks/useRepartidores';
+import { useState, useEffect, useCallback } from "react";
+import { useRepartidores, type AvailableUser } from '@/hooks/useRepartidores';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Sidebar,
@@ -44,6 +44,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Plus, User } from "lucide-react";
 
 // Función para obtener el nombre completo del repartidor
 function getNombreCompleto(repartidor: { nombre: string; apellido: string }) {
@@ -71,13 +89,26 @@ export default function RepartidoresPage() {
     loading, 
     error, 
     fetchRepartidores, 
+    createRepartidor,
     updateRepartidor, 
     deleteRepartidor,
+    getAvailableUsers,
     clearError 
   } = useRepartidores();
   
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTab, setSelectedTab] = useState("todos");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [formData, setFormData] = useState({
+    nombre: "",
+    apellido: "",
+    telefono: "",
+    email: "",
+    disponible: true
+  });
+  const [isCreating, setIsCreating] = useState(false);
 
   // Cargar repartidores al montar el componente
   useEffect(() => {
@@ -85,6 +116,67 @@ export default function RepartidoresPage() {
       fetchRepartidores();
     }
   }, [isAuthenticated, authLoading, fetchRepartidores]);
+
+  const loadAvailableUsers = useCallback(async () => {
+    try {
+      const users = await getAvailableUsers();
+      setAvailableUsers(users);
+    } catch (error) {
+      console.error('Error al cargar usuarios disponibles:', error);
+    }
+  }, [getAvailableUsers]);
+
+  // Cargar usuarios disponibles cuando se abre el diálogo
+  useEffect(() => {
+    if (isCreateDialogOpen && isAuthenticated) {
+      loadAvailableUsers();
+    }
+  }, [isCreateDialogOpen, isAuthenticated, loadAvailableUsers]);
+
+  const handleCreateRepartidor = async () => {
+    if (!selectedUserId || !formData.nombre || !formData.apellido || !formData.telefono) {
+      alert('Por favor, completa todos los campos requeridos');
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const result = await createRepartidor({
+        userId: parseInt(selectedUserId),
+        ...formData
+      });
+
+      if (result) {
+        setIsCreateDialogOpen(false);
+        setSelectedUserId("");
+        setFormData({
+          nombre: "",
+          apellido: "",
+          telefono: "",
+          email: "",
+          disponible: true
+        });
+        await fetchRepartidores();
+      }
+    } catch (error) {
+      console.error('Error al crear repartidor:', error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleUserSelect = (userId: string) => {
+    setSelectedUserId(userId);
+    const selectedUser = availableUsers.find(user => user.id.toString() === userId);
+    if (selectedUser) {
+      setFormData(prev => ({
+        ...prev,
+        email: selectedUser.email,
+        nombre: selectedUser.displayName?.split(' ')[0] || '',
+        apellido: selectedUser.displayName?.split(' ').slice(1).join(' ') || ''
+      }));
+    }
+  };
 
   // Limpiar errores cuando se desmonta el componente
   useEffect(() => {
@@ -231,10 +323,101 @@ export default function RepartidoresPage() {
         <main className="flex-1 space-y-4 p-4 sm:p-6 lg:p-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h1 className="text-2xl font-bold">Gestión de Repartidores</h1>
-            <Button>
-              <Truck className="mr-2 h-4 w-4" />
-              Nuevo Repartidor
-            </Button>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nuevo Repartidor
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Crear Nuevo Repartidor</DialogTitle>
+                  <DialogDescription>
+                    Asigna un usuario de tu organización como repartidor.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="user-select">Usuario *</Label>
+                    <Select value={selectedUserId} onValueChange={handleUserSelect}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un usuario" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableUsers.map((user) => (
+                          <SelectItem key={user.id} value={user.id.toString()}>
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4" />
+                              <div>
+                                <div className="font-medium">{user.displayName || user.email}</div>
+                                <div className="text-xs text-muted-foreground">{user.email}</div>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="nombre">Nombre *</Label>
+                      <Input
+                        id="nombre"
+                        value={formData.nombre}
+                        onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))}
+                        placeholder="Nombre"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="apellido">Apellido *</Label>
+                      <Input
+                        id="apellido"
+                        value={formData.apellido}
+                        onChange={(e) => setFormData(prev => ({ ...prev, apellido: e.target.value }))}
+                        placeholder="Apellido"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="telefono">Teléfono *</Label>
+                    <Input
+                      id="telefono"
+                      value={formData.telefono}
+                      onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
+                      placeholder="Número de teléfono"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="Email (opcional)"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsCreateDialogOpen(false)}
+                    disabled={isCreating}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    type="button" 
+                    onClick={handleCreateRepartidor}
+                    disabled={isCreating || !selectedUserId || !formData.nombre || !formData.apellido || !formData.telefono}
+                  >
+                    {isCreating ? 'Creando...' : 'Crear Repartidor'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Tarjetas de estadísticas */}
@@ -365,6 +548,12 @@ export default function RepartidoresPage() {
                             <div>
                               <div className="font-medium">{getNombreCompleto(repartidor)}</div>
                               <div className="text-xs text-muted-foreground">
+                                {repartidor.userDisplayName && (
+                                  <div>Usuario: {repartidor.userDisplayName}</div>
+                                )}
+                                {repartidor.userRole && (
+                                  <div>Rol: {repartidor.userRole}</div>
+                                )}
                                 ID: {repartidor.id}
                               </div>
                             </div>
@@ -377,7 +566,16 @@ export default function RepartidoresPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm">{repartidor.email}</div>
+                          <div className="text-sm">
+                            {repartidor.email && (
+                              <div>{repartidor.email}</div>
+                            )}
+                            {repartidor.userEmail && repartidor.userEmail !== repartidor.email && (
+                              <div className="text-xs text-muted-foreground">
+                                Usuario: {repartidor.userEmail}
+                              </div>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>{getEstadoBadge(repartidor.disponible)}</TableCell>
                         <TableCell>

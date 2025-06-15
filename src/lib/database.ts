@@ -140,13 +140,81 @@ export async function deletePedido(id: number, organizationId: number) {
 
 // Funciones para Repartidores
 export async function getRepartidoresByOrganization(organizationId: number) {
-  return await db.select().from(repartidores).where(eq(repartidores.organizationId, organizationId));
+  return await db.select({
+    id: repartidores.id,
+    userId: repartidores.userId,
+    nombre: repartidores.nombre,
+    apellido: repartidores.apellido,
+    telefono: repartidores.telefono,
+    email: repartidores.email,
+    disponible: repartidores.disponible,
+    organizationId: repartidores.organizationId,
+    createdAt: repartidores.createdAt,
+    updatedAt: repartidores.updatedAt,
+    // Información del usuario asociado
+    userEmail: users.email,
+    userDisplayName: users.displayName,
+    userRole: users.role,
+    userIsActive: users.isActive
+  })
+  .from(repartidores)
+  .leftJoin(users, eq(repartidores.userId, users.id))
+  .where(eq(repartidores.organizationId, organizationId))
+  .orderBy(desc(repartidores.createdAt));
 }
 
 export async function getRepartidorById(id: number, organizationId: number) {
-  return await db.select().from(repartidores)
-    .where(and(eq(repartidores.id, id), eq(repartidores.organizationId, organizationId)))
-    .limit(1);
+  return await db.select({
+    id: repartidores.id,
+    userId: repartidores.userId,
+    nombre: repartidores.nombre,
+    apellido: repartidores.apellido,
+    telefono: repartidores.telefono,
+    email: repartidores.email,
+    disponible: repartidores.disponible,
+    organizationId: repartidores.organizationId,
+    createdAt: repartidores.createdAt,
+    updatedAt: repartidores.updatedAt,
+    // Información del usuario asociado
+    userEmail: users.email,
+    userDisplayName: users.displayName,
+    userRole: users.role,
+    userIsActive: users.isActive
+  })
+  .from(repartidores)
+  .leftJoin(users, eq(repartidores.userId, users.id))
+  .where(and(eq(repartidores.id, id), eq(repartidores.organizationId, organizationId)))
+  .limit(1);
+}
+
+/**
+ * Obtiene usuarios de la organización que pueden ser asignados como repartidores
+ */
+export async function getAvailableUsersForRepartidor(organizationId: number) {
+  // Obtener usuarios que no están ya asignados como repartidores
+  const existingRepartidorUserIds = await db.select({ userId: repartidores.userId })
+    .from(repartidores)
+    .where(eq(repartidores.organizationId, organizationId));
+  
+  const excludedUserIds = existingRepartidorUserIds.map(r => r.userId);
+  
+  return await db.select({
+    id: users.id,
+    firebaseUid: users.firebaseUid,
+    email: users.email,
+    displayName: users.displayName,
+    role: users.role,
+    isActive: users.isActive
+  })
+  .from(users)
+  .where(
+    and(
+      eq(users.organizationId, organizationId),
+      eq(users.isActive, true),
+      excludedUserIds.length > 0 ? sql`${users.id} NOT IN (${excludedUserIds.join(',')})` : sql`1=1`
+    )
+  )
+  .orderBy(asc(users.displayName));
 }
 
 export async function createRepartidor(repartidorData: Omit<typeof repartidores.$inferInsert, 'organizationId'>, organizationId: number) {
@@ -159,7 +227,10 @@ export async function createRepartidor(repartidorData: Omit<typeof repartidores.
 
 export async function updateRepartidor(id: number, repartidorData: Partial<typeof repartidores.$inferInsert>, organizationId: number) {
   return await db.update(repartidores)
-    .set(repartidorData)
+    .set({
+      ...repartidorData,
+      updatedAt: new Date()
+    })
     .where(and(eq(repartidores.id, id), eq(repartidores.organizationId, organizationId)));
 }
 

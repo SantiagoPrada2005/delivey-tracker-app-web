@@ -17,13 +17,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/auth-utils';
+import { requireAuth } from '@/lib/auth/utils';
 import {
   getRepartidoresByOrganization,
   getRepartidorById,
   createRepartidor,
   updateRepartidor,
-  deleteRepartidor
+  deleteRepartidor,
+  getAvailableUsersForRepartidor
 } from '@/lib/database';
 
 /**
@@ -33,22 +34,41 @@ import {
 export async function GET(request: NextRequest) {
   try {
     // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    const authResult = await requireAuth(request);
     
-    if (!user || !user.organizationId) {
+    // Si requireAuth retorna un NextResponse, es un error
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    
+    const { user } = authResult;
+    
+    if (!user.organizationId) {
       return Response.json(
         { 
-          error: 'Usuario no autenticado o sin organización asignada',
-          code: 'AUTH_REQUIRED'
+          error: 'Usuario sin organización asignada',
+          code: 'NO_ORGANIZATION'
         },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
-    // Verificar si se está solicitando un repartidor específico por ID
+    // Verificar si se está solicitando un repartidor específico por ID o usuarios disponibles
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const availableUsers = searchParams.get('available-users');
 
+    if (availableUsers === 'true') {
+      // Obtener usuarios disponibles para asignar como repartidores
+      const users = await getAvailableUsersForRepartidor(Number(user.organizationId));
+      
+      return Response.json({
+        success: true,
+        users,
+        total: users.length
+      });
+    }
+    
     if (id) {
       // Obtener un repartidor específico
       const repartidor = await getRepartidorById(Number(id), Number(user.organizationId));
@@ -97,15 +117,22 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    const authResult = await requireAuth(request);
     
-    if (!user || !user.organizationId) {
+    // Si requireAuth retorna un NextResponse, es un error
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    
+    const { user } = authResult;
+    
+    if (!user.organizationId) {
       return Response.json(
         { 
-          error: 'Usuario no autenticado o sin organización asignada',
-          code: 'AUTH_REQUIRED'
+          error: 'Usuario sin organización asignada',
+          code: 'NO_ORGANIZATION'
         },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
@@ -113,10 +140,21 @@ export async function POST(request: NextRequest) {
     const repartidorData = await request.json();
     
     // Validar datos requeridos
-    if (!repartidorData.nombre || !repartidorData.apellido || !repartidorData.telefono) {
+    if (!repartidorData.userId || !repartidorData.nombre || !repartidorData.apellido || !repartidorData.telefono) {
       return Response.json(
         { 
-          error: 'Faltan campos requeridos (nombre, apellido, telefono)',
+          error: 'Faltan campos requeridos (userId, nombre, apellido, telefono)',
+          code: 'INVALID_DATA'
+        },
+        { status: 400 }
+      );
+    }
+    
+    // Validar que el userId sea un número válido
+    if (isNaN(Number(repartidorData.userId))) {
+      return Response.json(
+        { 
+          error: 'El userId debe ser un número válido',
           code: 'INVALID_DATA'
         },
         { status: 400 }
@@ -151,15 +189,22 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    const authResult = await requireAuth(request);
     
-    if (!user || !user.organizationId) {
+    // Si requireAuth retorna un NextResponse, es un error
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    
+    const { user } = authResult;
+    
+    if (!user.organizationId) {
       return Response.json(
         { 
-          error: 'Usuario no autenticado o sin organización asignada',
-          code: 'AUTH_REQUIRED'
+          error: 'Usuario sin organización asignada',
+          code: 'NO_ORGANIZATION'
         },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
@@ -220,15 +265,22 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    const authResult = await requireAuth(request);
     
-    if (!user || !user.organizationId) {
+    // Si requireAuth retorna un NextResponse, es un error
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    
+    const { user } = authResult;
+    
+    if (!user.organizationId) {
       return Response.json(
         { 
-          error: 'Usuario no autenticado o sin organización asignada',
-          code: 'AUTH_REQUIRED'
+          error: 'Usuario sin organización asignada',
+          code: 'NO_ORGANIZATION'
         },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
