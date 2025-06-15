@@ -16,8 +16,9 @@
  * los resultados según la organización a la que pertenece el usuario.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/auth-utils';
+import { NextRequest } from 'next/server';
+import { requireAuth } from '@/lib/auth/utils';
+import { productos } from '@/db/schema';
 import {
   getProductosByOrganization,
   getProductoById,
@@ -32,32 +33,39 @@ import {
  */
 export async function GET(request: NextRequest) {
   try {
-    // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    // Verificar autenticación con Firebase
+    const authResult = await requireAuth(request);
     
-    if (!user || !user.organizationId) {
+    // Si authResult es un NextResponse, significa que hubo un error de autenticación
+    if (authResult instanceof Response) {
+      return authResult;
+    }
+    
+    const { user } = authResult;
+    
+    if (!user.organizationId) {
       return Response.json(
         { 
-          error: 'Usuario no autenticado o sin organización asignada',
-          code: 'AUTH_REQUIRED'
+          error: 'Usuario sin organización asignada',
+          code: 'NO_ORGANIZATION'
         },
-        { status: 401 }
+        { status: 400 }
       );
     }
 
     // Verificar si se está solicitando un producto específico por ID
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const productId = searchParams.get('id');
 
-    if (id) {
-      // Obtener un producto específico
-      const producto = await getProductoById(Number(id), Number(user.organizationId));
+    if (productId) {
+      // Obtener producto específico
+      const producto = await getProductoById(parseInt(productId), user.organizationId);
       
       if (!producto || producto.length === 0) {
         return Response.json(
           { 
             error: 'Producto no encontrado',
-            code: 'NOT_FOUND'
+            code: 'PRODUCT_NOT_FOUND'
           },
           { status: 404 }
         );
@@ -65,25 +73,24 @@ export async function GET(request: NextRequest) {
       
       return Response.json({
         success: true,
-        producto: producto[0]
+        data: producto[0]
       });
     }
-    
+
     // Obtener todos los productos de la organización
-    const productos = await getProductosByOrganization(Number(user.organizationId));
+    const productos = await getProductosByOrganization(user.organizationId);
     
     return Response.json({
       success: true,
-      productos,
-      total: productos.length
+      data: productos
     });
     
   } catch (error) {
-    console.error('[API Productos] Error en GET /api/productos:', error);
+    console.error('Error en GET /api/productos:', error);
     return Response.json(
       { 
         error: 'Error interno del servidor',
-        code: 'INTERNAL_SERVER_ERROR'
+        code: 'INTERNAL_ERROR'
       },
       { status: 500 }
     );
@@ -92,63 +99,95 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/productos
- * Crea un nuevo producto en la organización del usuario
+ * Crea un nuevo producto
  */
 export async function POST(request: NextRequest) {
   try {
-    // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    // Verificar autenticación
+    const authResult = await requireAuth(request);
     
-    if (!user || !user.organizationId) {
+    if (authResult instanceof Response) {
+      return authResult;
+    }
+    
+    const { user } = authResult;
+    
+    if (!user.organizationId) {
       return Response.json(
         { 
-          error: 'Usuario no autenticado o sin organización asignada',
-          code: 'AUTH_REQUIRED'
+          error: 'Usuario sin organización asignada',
+          code: 'NO_ORGANIZATION'
         },
-        { status: 401 }
+        { status: 400 }
       );
     }
 
-    // Obtener datos del cuerpo de la solicitud
-    const productoData = await request.json();
+    // Obtener datos del cuerpo de la petición
+    const body = await request.json();
     
-    // Validar datos requeridos
-    if (!productoData.nombre || !productoData.precio) {
+    // Validar campos requeridos
+    if (!body.nombre || !body.precio) {
       return Response.json(
         { 
-          error: 'Faltan campos requeridos (nombre, precio)',
-          code: 'INVALID_DATA'
+          error: 'Nombre y precio son campos requeridos',
+          code: 'MISSING_REQUIRED_FIELDS'
         },
         { status: 400 }
       );
     }
-    
+
     // Validar que el precio sea un número positivo
-    if (isNaN(productoData.precio) || productoData.precio <= 0) {
+    const precio = parseFloat(body.precio);
+    if (isNaN(precio) || precio < 0) {
       return Response.json(
         { 
           error: 'El precio debe ser un número positivo',
-          code: 'INVALID_DATA'
+          code: 'INVALID_PRICE'
         },
         { status: 400 }
       );
     }
-    
+
+    // Validar que el stock sea un número entero no negativo
+    const stock = parseInt(body.stock) || 0;
+    if (stock < 0) {
+      return Response.json(
+        { 
+          error: 'El stock debe ser un número no negativo',
+          code: 'INVALID_STOCK'
+        },
+        { status: 400 }
+      );
+    }
+
     // Crear el producto
-    const result = await createProducto(productoData, Number(user.organizationId));
+    const productoData = {
+      nombre: body.nombre.trim(),
+      descripcion: body.descripcion?.trim() || null,
+      precio: precio.toString(),
+      stock: stock,
+      categoria: body.categoria?.trim() || null,
+      imagen: body.imagen?.trim() || null
+    };
+
+    const result = await createProducto(productoData, user.organizationId);
     
-    return NextResponse.json({
-        success: true,
-        message: 'Producto creado exitosamente',
-        id: result.id
-      }, { status: 201 });
+    return Response.json({
+      success: true,
+      data: {
+        id: result.id,
+        ...productoData,
+        organizationId: user.organizationId
+      },
+      message: 'Producto creado exitosamente'
+    }, { status: 201 });
     
   } catch (error) {
-    console.error('[API Productos] Error en POST /api/productos:', error);
+    console.error('Error en POST /api/productos:', error);
     return Response.json(
       { 
         error: 'Error interno del servidor',
-        code: 'INTERNAL_SERVER_ERROR'
+        code: 'INTERNAL_ERROR'
       },
       { status: 500 }
     );
@@ -161,74 +200,136 @@ export async function POST(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    // Verificar autenticación
+    const authResult = await requireAuth(request);
     
-    if (!user || !user.organizationId) {
+    if (authResult instanceof Response) {
+      return authResult;
+    }
+    
+    const { user } = authResult;
+    
+    if (!user.organizationId) {
       return Response.json(
         { 
-          error: 'Usuario no autenticado o sin organización asignada',
-          code: 'AUTH_REQUIRED'
+          error: 'Usuario sin organización asignada',
+          code: 'NO_ORGANIZATION'
         },
-        { status: 401 }
+        { status: 400 }
       );
     }
 
-    // Obtener datos del cuerpo de la solicitud
-    const productoData = await request.json();
+    // Obtener datos del cuerpo de la petición
+    const body = await request.json();
     
-    // Validar ID del producto
-    if (!productoData.id) {
+    // Validar que se proporcione el ID
+    if (!body.id) {
       return Response.json(
         { 
-          error: 'Se requiere el ID del producto',
-          code: 'INVALID_DATA'
+          error: 'ID del producto es requerido',
+          code: 'MISSING_PRODUCT_ID'
         },
         { status: 400 }
       );
     }
-    
-    // Validar precio si se está actualizando
-    if (productoData.precio !== undefined && (isNaN(productoData.precio) || productoData.precio <= 0)) {
+
+    const productId = parseInt(body.id);
+    if (isNaN(productId)) {
       return Response.json(
         { 
-          error: 'El precio debe ser un número positivo',
-          code: 'INVALID_DATA'
+          error: 'ID del producto debe ser un número válido',
+          code: 'INVALID_PRODUCT_ID'
         },
         { status: 400 }
       );
     }
-    
-    // Verificar que el producto exista y pertenezca a la organización
-    const producto = await getProductoById(productoData.id, Number(user.organizationId));
-    
-    if (!producto || producto.length === 0) {
+
+    // Verificar que el producto existe y pertenece a la organización
+    const existingProduct = await getProductoById(productId, user.organizationId);
+    if (!existingProduct || existingProduct.length === 0) {
       return Response.json(
         { 
-          error: 'Producto no encontrado o no pertenece a su organización',
-          code: 'NOT_FOUND'
+          error: 'Producto no encontrado',
+          code: 'PRODUCT_NOT_FOUND'
         },
         { status: 404 }
       );
     }
+
+    // Preparar datos de actualización
+    const updateData: Partial<typeof productos.$inferInsert> = {};
     
-    // Eliminar el ID del objeto de datos para actualizar
-    const { id, ...updateData } = productoData;
+    if (body.nombre !== undefined) {
+      if (!body.nombre.trim()) {
+        return Response.json(
+          { 
+            error: 'El nombre no puede estar vacío',
+            code: 'INVALID_NAME'
+          },
+          { status: 400 }
+        );
+      }
+      updateData.nombre = body.nombre.trim();
+    }
     
+    if (body.descripcion !== undefined) {
+      updateData.descripcion = body.descripcion?.trim() || null;
+    }
+    
+    if (body.precio !== undefined) {
+      const precio = parseFloat(body.precio);
+      if (isNaN(precio) || precio < 0) {
+        return Response.json(
+          { 
+            error: 'El precio debe ser un número positivo',
+            code: 'INVALID_PRICE'
+          },
+          { status: 400 }
+        );
+      }
+      updateData.precio = precio.toString();
+    }
+    
+    if (body.stock !== undefined) {
+      const stock = parseInt(body.stock);
+      if (isNaN(stock) || stock < 0) {
+        return Response.json(
+          { 
+            error: 'El stock debe ser un número no negativo',
+            code: 'INVALID_STOCK'
+          },
+          { status: 400 }
+        );
+      }
+      updateData.stock = stock;
+    }
+    
+    if (body.categoria !== undefined) {
+      updateData.categoria = body.categoria?.trim() || null;
+    }
+    
+    if (body.imagen !== undefined) {
+      updateData.imagen = body.imagen?.trim() || null;
+    }
+
     // Actualizar el producto
-    await updateProducto(id, updateData, Number(user.organizationId));
+    await updateProducto(productId, updateData, user.organizationId);
+    
+    // Obtener el producto actualizado
+    const updatedProduct = await getProductoById(productId, user.organizationId);
     
     return Response.json({
       success: true,
+      data: updatedProduct[0],
       message: 'Producto actualizado exitosamente'
     });
     
   } catch (error) {
-    console.error('[API Productos] Error en PUT /api/productos:', error);
+    console.error('Error en PUT /api/productos:', error);
     return Response.json(
       { 
         error: 'Error interno del servidor',
-        code: 'INTERNAL_SERVER_ERROR'
+        code: 'INTERNAL_ERROR'
       },
       { status: 500 }
     );
@@ -237,52 +338,68 @@ export async function PUT(request: NextRequest) {
 
 /**
  * DELETE /api/productos
- * Elimina un producto existente
+ * Elimina un producto
  */
 export async function DELETE(request: NextRequest) {
   try {
-    // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    // Verificar autenticación
+    const authResult = await requireAuth(request);
     
-    if (!user || !user.organizationId) {
-      return Response.json(
-        { 
-          error: 'Usuario no autenticado o sin organización asignada',
-          code: 'AUTH_REQUIRED'
-        },
-        { status: 401 }
-      );
+    if (authResult instanceof Response) {
+      return authResult;
     }
-
-    // Obtener ID del producto a eliminar
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
     
-    if (!id) {
+    const { user } = authResult;
+    
+    if (!user.organizationId) {
       return Response.json(
         { 
-          error: 'Se requiere el ID del producto',
-          code: 'INVALID_DATA'
+          error: 'Usuario sin organización asignada',
+          code: 'NO_ORGANIZATION'
         },
         { status: 400 }
       );
     }
+
+    // Obtener ID del producto desde query params
+    const { searchParams } = new URL(request.url);
+    const productId = searchParams.get('id');
     
-    // Verificar que el producto exista y pertenezca a la organización
-    const producto = await getProductoById(Number(id), Number(user.organizationId));
-    
-    if (!producto || producto.length === 0) {
+    if (!productId) {
       return Response.json(
         { 
-          error: 'Producto no encontrado o no pertenece a su organización',
-          code: 'NOT_FOUND'
+          error: 'ID del producto es requerido',
+          code: 'MISSING_PRODUCT_ID'
+        },
+        { status: 400 }
+      );
+    }
+
+    const id = parseInt(productId);
+    if (isNaN(id)) {
+      return Response.json(
+        { 
+          error: 'ID del producto debe ser un número válido',
+          code: 'INVALID_PRODUCT_ID'
+        },
+        { status: 400 }
+      );
+    }
+
+    // Verificar que el producto existe y pertenece a la organización
+    const existingProduct = await getProductoById(id, user.organizationId);
+    if (!existingProduct || existingProduct.length === 0) {
+      return Response.json(
+        { 
+          error: 'Producto no encontrado',
+          code: 'PRODUCT_NOT_FOUND'
         },
         { status: 404 }
       );
     }
-    
+
     // Eliminar el producto
-    await deleteProducto(Number(id), Number(user.organizationId));
+    await deleteProducto(id, user.organizationId);
     
     return Response.json({
       success: true,
@@ -290,11 +407,11 @@ export async function DELETE(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('[API Productos] Error en DELETE /api/productos:', error);
+    console.error('Error en DELETE /api/productos:', error);
     return Response.json(
       { 
         error: 'Error interno del servidor',
-        code: 'INTERNAL_SERVER_ERROR'
+        code: 'INTERNAL_ERROR'
       },
       { status: 500 }
     );

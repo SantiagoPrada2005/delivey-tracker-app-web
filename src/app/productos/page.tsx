@@ -13,16 +13,45 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, Search, Filter } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Plus, Search, Filter, Edit, Trash2 } from "lucide-react";
+import { useProductos, Producto, ProductoFormData } from "@/hooks/useProductos";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -39,76 +68,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { MobileSidebar } from "@/components/mobile-sidebar";
 
-// Tipo de datos para productos
-export type Product = {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  stock: number;
-  status: "active" | "inactive" | "out_of_stock";
-  description: string;
-  createdAt: string;
-};
-
-// Datos de ejemplo
-const data: Product[] = [
-  {
-    id: "1",
-    name: "Pizza Margherita",
-    category: "Pizzas",
-    price: 12.99,
-    stock: 25,
-    status: "active",
-    description: "Pizza clásica con tomate, mozzarella y albahaca",
-    createdAt: "2024-01-15",
-  },
-  {
-    id: "2",
-    name: "Hamburguesa Clásica",
-    category: "Hamburguesas",
-    price: 8.99,
-    stock: 0,
-    status: "out_of_stock",
-    description: "Hamburguesa con carne, lechuga, tomate y queso",
-    createdAt: "2024-01-10",
-  },
-  {
-    id: "3",
-    name: "Ensalada César",
-    category: "Ensaladas",
-    price: 7.50,
-    stock: 15,
-    status: "active",
-    description: "Ensalada con pollo, lechuga, crutones y aderezo césar",
-    createdAt: "2024-01-20",
-  },
-  {
-    id: "4",
-    name: "Pasta Carbonara",
-    category: "Pastas",
-    price: 11.99,
-    stock: 8,
-    status: "active",
-    description: "Pasta con salsa carbonara, bacon y queso parmesano",
-    createdAt: "2024-01-12",
-  },
-  {
-    id: "5",
-    name: "Tacos de Pollo",
-    category: "Mexicana",
-    price: 9.99,
-    stock: 20,
-    status: "inactive",
-    description: "Tacos con pollo marinado, cebolla y cilantro",
-    createdAt: "2024-01-08",
-  },
+// Categorías disponibles
+const CATEGORIAS = [
+  "Pizzas",
+  "Hamburguesas",
+  "Ensaladas",
+  "Pastas",
+  "Mexicana",
+  "Bebidas",
+  "Postres",
+  "Otros"
 ];
 
 // Definición de columnas
-const columns: ColumnDef<Product>[] = [
+const createColumns = (
+  onEdit: (producto: Producto) => void,
+  onDelete: (producto: Producto) => void
+): ColumnDef<Producto>[] => [
   {
-    accessorKey: "name",
+    accessorKey: "nombre",
     header: ({ column }) => {
       return (
         <Button
@@ -121,11 +99,11 @@ const columns: ColumnDef<Product>[] = [
       );
     },
     cell: ({ row }) => (
-      <div className="font-medium">{row.getValue("name")}</div>
+      <div className="font-medium">{row.getValue("nombre")}</div>
     ),
   },
   {
-    accessorKey: "category",
+    accessorKey: "categoria",
     header: ({ column }) => {
       return (
         <Button
@@ -137,12 +115,17 @@ const columns: ColumnDef<Product>[] = [
         </Button>
       );
     },
-    cell: ({ row }) => (
-      <Badge variant="outline">{row.getValue("category")}</Badge>
-    ),
+    cell: ({ row }) => {
+      const categoria = row.getValue("categoria") as string;
+      return categoria ? (
+        <Badge variant="outline">{categoria}</Badge>
+      ) : (
+        <span className="text-muted-foreground">Sin categoría</span>
+      );
+    },
   },
   {
-    accessorKey: "price",
+    accessorKey: "precio",
     header: ({ column }) => {
       return (
         <Button
@@ -155,10 +138,10 @@ const columns: ColumnDef<Product>[] = [
       );
     },
     cell: ({ row }) => {
-      const price = parseFloat(row.getValue("price"));
-      const formatted = new Intl.NumberFormat("es-ES", {
+      const price = parseFloat(row.getValue("precio"));
+      const formatted = new Intl.NumberFormat("es-CO", {
         style: "currency",
-        currency: "EUR",
+        currency: "COP",
       }).format(price);
       return <div className="font-medium">{formatted}</div>;
     },
@@ -188,48 +171,45 @@ const columns: ColumnDef<Product>[] = [
     },
   },
   {
-    accessorKey: "status",
-    header: "Estado",
-    cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      const statusConfig = {
-        active: { label: "Activo", variant: "default" as const },
-        inactive: { label: "Inactivo", variant: "secondary" as const },
-        out_of_stock: { label: "Sin Stock", variant: "destructive" as const },
-      };
-      const config = statusConfig[status as keyof typeof statusConfig];
-      return <Badge variant={config.variant}>{config.label}</Badge>;
-    },
-  },
-  {
     id: "actions",
     enableHiding: false,
     cell: ({ row }) => {
-      const product = row.original;
+      const producto = row.original;
 
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Abrir menú</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(product.id)}
-            >
-              Copiar ID del producto
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Ver detalles</DropdownMenuItem>
-            <DropdownMenuItem>Editar producto</DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600">
-              Eliminar producto
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit(producto)}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                 Esta acción no se puede deshacer. Esto eliminará permanentemente el producto &quot;{producto.nombre}&quot; de tu inventario.
+               </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => onDelete(producto)}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Eliminar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       );
     },
   },
@@ -276,9 +256,9 @@ function DataTable<TData, TValue>({
           <Search className="h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar productos..."
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+            value={(table.getColumn("nombre")?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
-              table.getColumn("name")?.setFilterValue(event.target.value)
+              table.getColumn("nombre")?.setFilterValue(event.target.value)
             }
             className="max-w-sm"
           />
@@ -300,7 +280,7 @@ function DataTable<TData, TValue>({
                     key={column.id}
                     className="capitalize"
                     checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
+                    onCheckedChange={(value: boolean) =>
                       column.toggleVisibility(!!value)
                     }
                   >
@@ -391,6 +371,162 @@ function DataTable<TData, TValue>({
 
 // Componente principal de la página
 export default function ProductsPage() {
+  const {
+    productos,
+    loading,
+    error,
+    createProducto,
+    updateProducto,
+    deleteProducto,
+    fetchProductos
+  } = useProductos();
+
+  // Estados para el diálogo de crear/editar
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingProducto, setEditingProducto] = useState<Producto | null>(null);
+  const [formData, setFormData] = useState<ProductoFormData>({
+    nombre: '',
+    descripcion: '',
+    precio: '0',
+    stock: 0,
+    categoria: '',
+    imagen: ''
+  });
+
+  // Funciones para manejar el CRUD
+  const handleEdit = (producto: Producto) => {
+    setEditingProducto(producto);
+    setFormData({
+      nombre: producto.nombre,
+      descripcion: producto.descripcion || '',
+      precio: producto.precio.toString(),
+      stock: producto.stock,
+      categoria: producto.categoria || '',
+      imagen: producto.imagen || ''
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (producto: Producto) => {
+    try {
+      await deleteProducto(producto.id);
+      toast({
+        title: "Producto eliminado",
+        description: `El producto "${producto.nombre}" ha sido eliminado exitosamente.`,
+      });
+    } catch {
+       toast({
+         title: "Error",
+         description: "No se pudo eliminar el producto. Inténtalo de nuevo.",
+         variant: "destructive",
+       });
+     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.nombre.trim()) {
+      toast({
+        title: "Error",
+        description: "El nombre del producto es requerido.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (parseFloat(formData.precio) <= 0) {
+      toast({
+        title: "Error",
+        description: "El precio debe ser mayor a 0.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.stock < 0) {
+      toast({
+        title: "Error",
+        description: "El stock no puede ser negativo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (editingProducto) {
+        await updateProducto(editingProducto.id, formData);
+        toast({
+          title: "Producto actualizado",
+          description: `El producto "${formData.nombre}" ha sido actualizado exitosamente.`,
+        });
+      } else {
+        await createProducto(formData);
+        toast({
+          title: "Producto creado",
+          description: `El producto "${formData.nombre}" ha sido creado exitosamente.`,
+        });
+      }
+      
+      setIsDialogOpen(false);
+      setEditingProducto(null);
+      setFormData({
+        nombre: '',
+        descripcion: '',
+        precio: '0',
+        stock: 0,
+        categoria: '',
+        imagen: ''
+      });
+    } catch {
+       toast({
+         title: "Error",
+         description: editingProducto 
+           ? "No se pudo actualizar el producto. Inténtalo de nuevo."
+           : "No se pudo crear el producto. Inténtalo de nuevo.",
+         variant: "destructive",
+       });
+     }
+  };
+
+  const handleOpenDialog = () => {
+    setEditingProducto(null);
+    setFormData({
+      nombre: '',
+      descripcion: '',
+      precio: '0',
+      stock: 0,
+      categoria: '',
+      imagen: ''
+    });
+    setIsDialogOpen(true);
+    fetchProductos();
+  };
+
+  const columns = createColumns(handleEdit, handleDelete);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto py-10">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Cargando productos...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-10">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Error al cargar productos</h2>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={fetchProductos}>Reintentar</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-background">
       {/* Sidebar */}
@@ -416,10 +552,124 @@ export default function ProductsPage() {
                   Administra tu catálogo de productos, precios y stock
                 </p>
               </div>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Nuevo Producto
-              </Button>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={handleOpenDialog}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nuevo Producto
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingProducto ? 'Editar Producto' : 'Nuevo Producto'}
+                    </DialogTitle>
+                    <DialogDescription>
+                      {editingProducto 
+                        ? 'Modifica los datos del producto seleccionado.'
+                        : 'Completa la información para crear un nuevo producto.'}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="nombre" className="text-right">
+                          Nombre
+                        </Label>
+                        <Input
+                          id="nombre"
+                          value={formData.nombre}
+                          onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                          className="col-span-3"
+                          placeholder="Nombre del producto"
+                          required
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="descripcion" className="text-right">
+                          Descripción
+                        </Label>
+                        <Textarea
+                          id="descripcion"
+                          value={formData.descripcion}
+                          onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                          className="col-span-3"
+                          placeholder="Descripción del producto"
+                          rows={3}
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="precio" className="text-right">
+                          Precio
+                        </Label>
+                        <Input
+                          id="precio"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={formData.precio}
+                          onChange={(e) => setFormData({ ...formData, precio: e.target.value || '0' })}
+                          className="col-span-3"
+                          placeholder="0.00"
+                          required
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="stock" className="text-right">
+                          Stock
+                        </Label>
+                        <Input
+                          id="stock"
+                          type="number"
+                          min="0"
+                          value={formData.stock}
+                          onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
+                          className="col-span-3"
+                          placeholder="0"
+                          required
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="categoria" className="text-right">
+                          Categoría
+                        </Label>
+                        <Select
+                          value={formData.categoria}
+                          onValueChange={(value) => setFormData({ ...formData, categoria: value })}
+                        >
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Selecciona una categoría" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CATEGORIAS.map((categoria) => (
+                              <SelectItem key={categoria} value={categoria}>
+                                {categoria}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="imagen" className="text-right">
+                          Imagen URL
+                        </Label>
+                        <Input
+                          id="imagen"
+                          value={formData.imagen}
+                          onChange={(e) => setFormData({ ...formData, imagen: e.target.value })}
+                          className="col-span-3"
+                          placeholder="https://ejemplo.com/imagen.jpg"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit">
+                        {editingProducto ? 'Actualizar' : 'Crear'} Producto
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {/* Stats Cards */}
@@ -431,7 +681,7 @@ export default function ProductsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{data.length}</div>
+                  <div className="text-2xl font-bold">{productos.length}</div>
                   <p className="text-xs text-muted-foreground">
                     +2 desde el mes pasado
                   </p>
@@ -445,10 +695,10 @@ export default function ProductsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {data.filter(p => p.status === "active").length}
+                    {productos.length}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {Math.round((data.filter(p => p.status === "active").length / data.length) * 100)}% del total
+                    Total de productos
                   </p>
                 </CardContent>
               </Card>
@@ -460,7 +710,7 @@ export default function ProductsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-red-600">
-                    {data.filter(p => p.stock === 0).length}
+                    {productos.filter(p => p.stock === 0).length}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Requieren reposición
@@ -475,11 +725,11 @@ export default function ProductsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {new Intl.NumberFormat("es-ES", {
+                    {new Intl.NumberFormat("es-CO", {
                       style: "currency",
-                      currency: "EUR",
+                      currency: "COP",
                     }).format(
-                      data.reduce((total, product) => total + (product.price * product.stock), 0)
+                      productos.reduce((total, product) => total + (parseFloat(product.precio) * product.stock), 0)
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -498,7 +748,7 @@ export default function ProductsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <DataTable columns={columns} data={data} />
+                <DataTable columns={columns} data={productos} />
               </CardContent>
             </Card>
           </div>

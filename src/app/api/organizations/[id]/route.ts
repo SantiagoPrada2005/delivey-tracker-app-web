@@ -52,7 +52,7 @@ interface UpdateOrganizationResponse {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse<GetOrganizationResponse>> {
   try {
     // Obtener usuario autenticado
@@ -63,7 +63,8 @@ export async function GET(
     }
     
     const { user } = authResult;
-    const organizationId = parseInt(params.id);
+    const { id } = await params;
+    const organizationId = parseInt(id);
 
     if (isNaN(organizationId)) {
       return NextResponse.json(
@@ -143,7 +144,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse<UpdateOrganizationResponse>> {
   try {
     // Obtener usuario autenticado
@@ -154,7 +155,8 @@ export async function PUT(
     }
     
     const { user } = authResult;
-    const organizationId = parseInt(params.id);
+    const { id } = await params;
+    const organizationId = parseInt(id);
 
     if (isNaN(organizationId)) {
       return NextResponse.json(
