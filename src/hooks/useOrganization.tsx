@@ -90,12 +90,24 @@ function OrganizationProvider({ children }: OrganizationProviderProps) {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/organizations');
+      if (!user) {
+        throw new Error('Usuario no autenticado');
+      }
+      
+      const idToken = await user.getIdToken();
+      const response = await fetch('/api/organizations', {
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       if (!response.ok) {
         throw new Error('Failed to fetch organizations');
       }
       
-      const orgs: Organization[] = await response.json();
+      const data = await response.json();
+      const orgs: Organization[] = data.organizations || [];
       setOrganizations(orgs);
       
       // Si no hay organización seleccionada y hay organizaciones disponibles,
@@ -108,7 +120,7 @@ function OrganizationProvider({ children }: OrganizationProviderProps) {
     } finally {
       setLoading(false);
     }
-  }, [selectedOrganizationId, selectOrganization]);
+  }, [selectedOrganizationId, selectOrganization, user]);
 
   // Verificar el estado de la organización del usuario
   const checkOrganizationStatus = useCallback(async () => {

@@ -17,7 +17,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/auth-utils';
+import { requireAuth } from '@/lib/auth/utils';
 import {
   getClientesByOrganization,
   getClienteById,
@@ -32,16 +32,23 @@ import {
  */
 export async function GET(request: NextRequest) {
   try {
-    // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    // Verificar autenticación con Firebase
+    const authResult = await requireAuth(request);
     
-    if (!user || !user.organizationId) {
+    // Si authResult es un NextResponse, significa que hubo un error de autenticación
+    if (authResult instanceof Response) {
+      return authResult;
+    }
+    
+    const { user } = authResult;
+    
+    if (!user.organizationId) {
       return Response.json(
         { 
-          error: 'Usuario no autenticado o sin organización asignada',
-          code: 'AUTH_REQUIRED'
+          error: 'Usuario sin organización asignada',
+          code: 'NO_ORGANIZATION'
         },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
@@ -96,16 +103,23 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    // Verificar autenticación con Firebase
+    const authResult = await requireAuth(request);
     
-    if (!user || !user.organizationId) {
+    // Si authResult es un NextResponse, significa que hubo un error de autenticación
+    if (authResult instanceof Response) {
+      return authResult;
+    }
+    
+    const { user } = authResult;
+    
+    if (!user.organizationId) {
       return Response.json(
         { 
-          error: 'Usuario no autenticado o sin organización asignada',
-          code: 'AUTH_REQUIRED'
+          error: 'Usuario sin organización asignada',
+          code: 'NO_ORGANIZATION'
         },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
@@ -150,16 +164,23 @@ export async function POST(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    // Verificar autenticación con Firebase
+    const authResult = await requireAuth(request);
     
-    if (!user || !user.organizationId) {
+    // Si authResult es un NextResponse, significa que hubo un error de autenticación
+    if (authResult instanceof Response) {
+      return authResult;
+    }
+    
+    const { user } = authResult;
+    
+    if (!user.organizationId) {
       return Response.json(
         { 
-          error: 'Usuario no autenticado o sin organización asignada',
-          code: 'AUTH_REQUIRED'
+          error: 'Usuario sin organización asignada',
+          code: 'NO_ORGANIZATION'
         },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
@@ -219,16 +240,23 @@ export async function PUT(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    // Verificar autenticación con Firebase
+    const authResult = await requireAuth(request);
     
-    if (!user || !user.organizationId) {
+    // Si authResult es un NextResponse, significa que hubo un error de autenticación
+    if (authResult instanceof Response) {
+      return authResult;
+    }
+    
+    const { user } = authResult;
+    
+    if (!user.organizationId) {
       return Response.json(
         { 
-          error: 'Usuario no autenticado o sin organización asignada',
-          code: 'AUTH_REQUIRED'
+          error: 'Usuario sin organización asignada',
+          code: 'NO_ORGANIZATION'
         },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
