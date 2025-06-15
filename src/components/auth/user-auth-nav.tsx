@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
-import { LogOut, User, Settings } from 'lucide-react';
+import { LogOut, User, Settings, Home } from 'lucide-react';
 
 export function UserAuthNav() {
   const { user, signOut, loading, isAuthenticated } = useAuth();
@@ -56,7 +56,8 @@ export function UserAuthNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+        <Button variant="ghost" className="relative flex items-center gap-2 h-8 px-2 rounded-full">
+          <span className="text-sm font-medium">{user.displayName || user.email}</span>
           <Avatar className="h-8 w-8">
             <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'Usuario'} />
             <AvatarFallback>{getInitials(user.displayName || user.email || 'Usuario')}</AvatarFallback>
@@ -83,6 +84,10 @@ export function UserAuthNav() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => router.push('/dashboard')}>
+          <Home className="mr-2 h-4 w-4" />
+          <span>Dashboard</span>
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push('/perfil')}>
           <User className="mr-2 h-4 w-4" />
           <span>Perfil</span>
