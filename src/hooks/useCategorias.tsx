@@ -40,7 +40,7 @@ export function useCategorias() {
 
   const createCategoria = async (categoriaData: CategoriaFormData) => {
     try {
-      const response = await fetch('/api/categorias', {
+      const response = await authenticatedFetch('/api/categorias', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,7 +63,7 @@ export function useCategorias() {
 
   const updateCategoria = async (id: string | number, categoriaData: Partial<CategoriaFormData>) => {
     try {
-      const response = await fetch(`/api/categorias/${id}`, {
+      const response = await authenticatedFetch(`/api/categorias/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -90,7 +90,7 @@ export function useCategorias() {
 
   const deleteCategoria = async (id: string | number) => {
     try {
-      const response = await fetch(`/api/categorias/${id}`, {
+      const response = await authenticatedFetch(`/api/categorias/${id}`, {
         method: 'DELETE',
       });
 
