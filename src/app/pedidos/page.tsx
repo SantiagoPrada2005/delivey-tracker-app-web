@@ -3,1424 +3,323 @@
 import { useState, useEffect } from "react";
 import { useClientes } from "@/hooks/useClientes";
 import { useProductos } from "@/hooks/useProductos";
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarGroup, 
-  SidebarGroupContent, 
-  SidebarGroupLabel, 
-  SidebarMenu, 
-  SidebarMenuButton, 
-  SidebarMenuItem, 
-  SidebarProvider,
-  SidebarInset,
-  SidebarTrigger,
-  SidebarHeader,
-  SidebarFooter
-} from "@/components/ui/sidebar";
-import { Home, Users, ShoppingBag, Truck, Settings, Bell, Package, Search, MoreHorizontal, Clock, Plus, Edit, Trash2, Eye } from "lucide-react";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { UserAuthNav } from "@/components/auth/user-auth-nav";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
-  TrendingUp,
-  TrendingDown,
-  Timer,
-  CheckCircle,
-  XCircle,
-  AlertCircle
-} from "lucide-react";
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { useToast } from "@/hooks/use-toast";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-// import { toast } from "@/hooks/use-toast";
-// Función temporal para toast hasta que se implemente correctamente
-const toast = ({ title, description }: { title?: string; description?: string; variant?: string }) => {
-  console.log(`Toast: ${title} - ${description}`);
-};
-
-// Tipos para los pedidos basados en el schema de la base de datos
-interface Pedido {
-  id: number;
-  clienteId: number;
-  estado: 'pendiente' | 'en_proceso' | 'en_camino' | 'entregado' | 'cancelado';
-  total: number;
-  direccionEntrega: string;
-  fechaEntrega?: Date;
-  organizationId: number;
-  createdAt: Date;
-  cliente?: {
-    id: number;
-    nombre: string;
-    apellido: string;
-    telefono: string;
-    email: string;
-  };
-  asignaciones?: {
-    id: number;
-    repartidorId: number;
-    fechaAsignacion: Date;
-    estado: 'asignado' | 'en_camino' | 'entregado' | 'cancelado';
-    repartidor?: {
-      nombre: string;
-      apellido: string;
-    };
-  }[];
-  detalles?: {
-    id: number;
-    productoId: number;
-    cantidad: number;
-    precioUnitario: number;
-    subtotal: number;
-    producto?: {
-      nombre: string;
-    };
-  }[];
-}
-
-
-/*
-interface EstadisticasEntrega {
-  tiempoPromedioEntrega: number; // en minutos
-  pedidosEntregadosATiempo: number;
-  pedidosEntregadosTarde: number;
-  tiempoMinimoEntrega: number;
-  tiempoMaximoEntrega: number;
-  tendenciaTiempoEntrega: 'mejorando' | 'empeorando' | 'estable';
-}
-*/
-// Función para obtener el color del badge según el estado
-function getEstadoBadge(estado: string) {
-  switch (estado) {
-    case "entregado":
-      return <Badge className="bg-green-500 text-white"><CheckCircle className="w-3 h-3 mr-1" />Entregado</Badge>;
-    case "en_camino":
-      return <Badge className="bg-blue-500 text-white"><Truck className="w-3 h-3 mr-1" />En camino</Badge>;
-    case "en_proceso":
-      return <Badge className="bg-orange-500 text-white"><Timer className="w-3 h-3 mr-1" />En proceso</Badge>;
-    case "pendiente":
-      return <Badge className="bg-yellow-500 text-black"><AlertCircle className="w-3 h-3 mr-1" />Pendiente</Badge>;
-    case "cancelado":
-      return <Badge className="bg-red-500 text-white"><XCircle className="w-3 h-3 mr-1" />Cancelado</Badge>;
-    default:
-      return <Badge>{estado}</Badge>;
-  }
-}
-
-// Función para calcular el tiempo de entrega
-function calcularTiempoEntrega(fechaCreacion: Date, fechaEntrega?: Date): number {
-  if (!fechaEntrega) return 0;
-  const diff = fechaEntrega.getTime() - fechaCreacion.getTime();
-  return Math.round(diff / (1000 * 60)); // en minutos
-}
-
-// Función para formatear tiempo en formato legible
-function formatearTiempo(minutos: number): string {
-  if (minutos < 60) {
-    return `${minutos} min`;
-  }
-  const horas = Math.floor(minutos / 60);
-  const mins = minutos % 60;
-  return `${horas}h ${mins}m`;
-}
-
-// Función para formatear fecha y hora en zona horaria de Bogotá
-function formatearFechaBogota(fecha: Date | string): string {
-  const date = new Date(fecha);
-  return date.toLocaleString('es-CO', {
-    timeZone: 'America/Bogota',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
-}
-
-// Función para formatear fecha completa en zona horaria de Bogotá
-function formatearFechaCompletaBogota(fecha: Date | string): string {
-  const date = new Date(fecha);
-  return date.toLocaleString('es-CO', {
-    timeZone: 'America/Bogota',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
-}
-
-// Función para formatear solo la fecha en zona horaria de Bogotá
-function formatearSoloFechaBogota(fecha: Date | string): string {
-  const date = new Date(fecha);
-  return date.toLocaleDateString('es-CO', {
-    timeZone: 'America/Bogota',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  });
-}
-
-// Función para obtener la hora actual en Bogotá
-function obtenerHoraActualBogota(): string {
-  const now = new Date();
-  return now.toLocaleString('es-CO', {
-    timeZone: 'America/Bogota',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true
-  });
-}
+  PedidoStats,
+  PedidoFilters,
+  PedidosTable,
+  PedidoForm,
+  ClienteForm,
+  PedidoViewDialog,
+  PedidoActions,
+  Pedido,
+  PedidoFormData,
+  ClienteFormData,
+  generarFechaEntregaPorDefecto
+} from "@/components/pedidos";
 
 export default function PedidosPage() {
-  // Hook para manejar clientes
-  const { clientes, loading: clientesLoading, fetchClientes } = useClientes();
-  
-  // Hook para manejar productos
-  const { productos, loading: productosLoading, error: productosError } = useProductos();
-  
+  const { toast } = useToast();
+  const { clientes, loading: clientesLoading, createCliente, fetchClientes } = useClientes();
+  const { productos, loading: productosLoading } = useProductos();
+
+
+  // Estados principales
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterEstado, setFilterEstado] = useState("todos");
-  const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Estados de diálogos
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [isCreateClienteDialogOpen, setIsCreateClienteDialogOpen] = useState(false);
-  const [horaActual, setHoraActual] = useState(obtenerHoraActualBogota());
-  // const [estadisticas, setEstadisticas] = useState<EstadisticasEntrega | null>(null);
 
-  // Estados para el formulario
-  const [formData, setFormData] = useState({
-    clienteId: '',
-    direccionEntrega: '',
-    fechaEntrega: '',
-    detalles: [{ productoId: '', cantidad: 1, precioUnitario: 0 }]
+  // Estados de formularios
+  const [formData, setFormData] = useState<PedidoFormData>({
+    clienteId: "",
+    fechaEntrega: generarFechaEntregaPorDefecto(),
+    direccionEntrega: "",
+    detalles: []
   });
 
-  // Estados para el formulario de cliente
-  const [clienteFormData, setClienteFormData] = useState({
-    nombre: '',
-    apellido: '',
-    telefono: '',
-    email: '',
-    direccion: ''
-  });
+
+
+  // Estados de selección y filtros
+  const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
+  const [editingPedido, setEditingPedido] = useState<Pedido | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("todos");
 
   // Cargar datos iniciales
   useEffect(() => {
-    loadPedidos();
-    // loadEstadisticas();
-    // Los clientes y productos se cargan automáticamente con sus respectivos hooks
+    fetchPedidos();
+    fetchClientes();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Actualizar hora actual cada minuto
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+    return () => clearInterval(timer);
   }, []);
 
-  // Actualizar la hora cada segundo
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setHoraActual(obtenerHoraActualBogota());
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Efecto para auto-rellenar información del cliente seleccionado
-  useEffect(() => {
-    if (formData.clienteId) {
-      const clienteSeleccionado = clientes.find(c => c.id.toString() === formData.clienteId);
-      if (clienteSeleccionado && clienteSeleccionado.direccion) {
-        setFormData(prev => ({
-          ...prev,
-          direccionEntrega: prev.direccionEntrega || clienteSeleccionado.direccion
-        }));
-      }
-    }
-  }, [formData.clienteId, clientes]);
-
-  const loadPedidos = async () => {
+  // Funciones de API
+  const fetchPedidos = async () => {
     try {
+      setLoading(true);
       const response = await fetch('/api/pedidos');
-      const data = await response.json();
-      if (data.success) {
-        setPedidos(data.pedidos);
+      if (response.ok) {
+        const data = await response.json();
+        setPedidos(data);
+      } else {
+        throw new Error('Error al cargar pedidos');
       }
     } catch (error) {
-      console.error('Error loading pedidos:', error);
+      console.error('Error:', error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los pedidos",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-
-
-  // Función removida - ahora se usa el hook useProductos
-
-  // const loadEstadisticas = async () => {
-  //   try {
-  //     const response = await fetch('/api/pedidos/estadisticas');
-  //     const data = await response.json();
-  //     if (data.success) {
-  //       setEstadisticas(data.estadisticas);
-  //     }
-  //   } catch (error) {
-  //     console.error('Error loading estadísticas:', error);
-  //   }
-  // };
-
-  const handleCreatePedido = async () => {
+  const handleSubmit = async () => {
     try {
-      const total = formData.detalles.reduce((sum, detalle) => {
-        return sum + (detalle.cantidad * detalle.precioUnitario);
-      }, 0);
-
-      const response = await fetch('/api/pedidos', {
-        method: 'POST',
+      const url = editingPedido ? `/api/pedidos/${editingPedido.id}` : '/api/pedidos';
+      const method = editingPedido ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          total,
-          fechaEntrega: formData.fechaEntrega ? new Date(formData.fechaEntrega) : null
-        }),
+        body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
-      if (data.success) {
+      if (response.ok) {
         toast({
           title: "Éxito",
-          description: "Pedido creado correctamente"
+          description: editingPedido ? "Pedido actualizado correctamente" : "Pedido creado correctamente",
         });
-        setIsCreateDialogOpen(false);
+        setIsFormDialogOpen(false);
         resetForm();
-        loadPedidos();
+        fetchPedidos();
       } else {
-        throw new Error(data.error);
+        throw new Error(editingPedido ? 'Error al actualizar pedido' : 'Error al crear pedido');
       }
     } catch (error) {
-      console.error('Error creating pedido:', error);
+      console.error('Error:', error);
       toast({
         title: "Error",
-        description: "No se pudo crear el pedido",
-        variant: "destructive"
+        description: editingPedido ? "No se pudo actualizar el pedido" : "No se pudo crear el pedido",
+        variant: "destructive",
       });
     }
   };
 
-  const handleUpdatePedido = async () => {
-    if (!selectedPedido) return;
-
+  const handleCreateCliente = async (clienteData: ClienteFormData) => {
     try {
-      const response = await fetch('/api/pedidos', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: selectedPedido.id,
-          ...formData
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        toast({
-          title: "Éxito",
-          description: "Pedido actualizado correctamente"
-        });
-        setIsEditDialogOpen(false);
-        setSelectedPedido(null);
-        resetForm();
-        loadPedidos();
-      } else {
-        throw new Error(data.error);
+      const nuevoCliente = await createCliente(clienteData);
+      if (nuevoCliente) {
+        setFormData(prev => ({ ...prev, clienteId: nuevoCliente.id.toString() }));
       }
-    } catch (error) {
-      console.error('Error updating pedido:', error);
       toast({
-        title: "Error",
-        description: "No se pudo actualizar el pedido",
-        variant: "destructive"
+        title: "Éxito",
+        description: "Cliente creado correctamente",
       });
-    }
-  };
-
-  const handleDeletePedido = async (id: number) => {
-    try {
-      const response = await fetch('/api/pedidos', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ id }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        toast({
-          title: "Éxito",
-          description: "Pedido eliminado correctamente"
-        });
-        loadPedidos();
-      } else {
-        throw new Error(data.error);
-      }
     } catch (error) {
-      console.error('Error deleting pedido:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el pedido",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const resetForm = () => {
-    // Establecer fecha de entrega por defecto: fecha actual de Bogotá + 15 minutos
-    const now = new Date();
-    // Convertir a zona horaria de Bogotá (UTC-5)
-    const bogotaTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Bogota"}));
-    bogotaTime.setMinutes(bogotaTime.getMinutes() + 15);
-    
-    // Formatear para datetime-local input (YYYY-MM-DDTHH:MM)
-    const year = bogotaTime.getFullYear();
-    const month = String(bogotaTime.getMonth() + 1).padStart(2, '0');
-    const day = String(bogotaTime.getDate()).padStart(2, '0');
-    const hours = String(bogotaTime.getHours()).padStart(2, '0');
-    const minutes = String(bogotaTime.getMinutes()).padStart(2, '0');
-    const defaultFechaEntrega = `${year}-${month}-${day}T${hours}:${minutes}`;
-
-    setFormData({
-      clienteId: '',
-      direccionEntrega: '',
-      fechaEntrega: defaultFechaEntrega,
-      detalles: [{ productoId: '', cantidad: 1, precioUnitario: 0 }]
-    });
-  };
-
-  const resetClienteForm = () => {
-    setClienteFormData({
-      nombre: '',
-      apellido: '',
-      telefono: '',
-      email: '',
-      direccion: ''
-    });
-  };
-
-  const handleCreateCliente = async () => {
-    try {
-      const response = await fetch('/api/clientes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(clienteFormData),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        toast({
-          title: "Éxito",
-          description: "Cliente creado correctamente"
-        });
-        setIsCreateClienteDialogOpen(false);
-        resetClienteForm();
-        // Recargar clientes y seleccionar el nuevo cliente
-        await fetchClientes();
-        setFormData(prev => ({ 
-          ...prev, 
-          clienteId: data.cliente.id.toString(),
-          direccionEntrega: clienteFormData.direccion
-        }));
-      } else {
-        throw new Error(data.error);
-      }
-    } catch (error) {
-      console.error('Error creating cliente:', error);
+      console.error('Error:', error);
       toast({
         title: "Error",
         description: "No se pudo crear el cliente",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
-  const openEditDialog = (pedido: Pedido) => {
-    setSelectedPedido(pedido);
+  const handleDelete = async (pedido: Pedido) => {
+    try {
+      const response = await fetch(`/api/pedidos/${pedido.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Éxito",
+          description: "Pedido eliminado correctamente",
+        });
+        fetchPedidos();
+      } else {
+        throw new Error('Error al eliminar pedido');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el pedido",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Funciones de utilidad
+  const resetForm = () => {
+    setFormData({
+      clienteId: "",
+      fechaEntrega: generarFechaEntregaPorDefecto(),
+      direccionEntrega: "",
+      detalles: []
+    });
+    setEditingPedido(null);
+  };
+
+
+
+  const handleEdit = (pedido: Pedido) => {
+    setEditingPedido(pedido);
     setFormData({
       clienteId: pedido.clienteId.toString(),
+      fechaEntrega: typeof pedido.fechaEntrega === 'string' ? pedido.fechaEntrega : (pedido.fechaEntrega?.toISOString().split('T')[0] || generarFechaEntregaPorDefecto()),
       direccionEntrega: pedido.direccionEntrega,
-      fechaEntrega: pedido.fechaEntrega ? new Date(pedido.fechaEntrega).toISOString().slice(0, 16) : '',
-      detalles: pedido.detalles ? pedido.detalles.map(detalle => ({
+      detalles: pedido.detalles?.map(detalle => ({
         productoId: detalle.productoId.toString(),
         cantidad: detalle.cantidad,
         precioUnitario: detalle.precioUnitario
-      })) : [{ productoId: '', cantidad: 1, precioUnitario: 0 }]
+      })) || []
     });
-    setIsEditDialogOpen(true);
+    setIsFormDialogOpen(true);
   };
 
-  const openViewDialog = (pedido: Pedido) => {
+  const handleView = (pedido: Pedido) => {
     setSelectedPedido(pedido);
     setIsViewDialogOpen(true);
   };
 
-  const addDetalle = () => {
-    setFormData(prev => ({
-      ...prev,
-      detalles: [...prev.detalles, { productoId: '', cantidad: 1, precioUnitario: 0 }]
-    }));
+  const handleCreateClick = () => {
+    resetForm();
+    setIsFormDialogOpen(true);
   };
 
-  const removeDetalle = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      detalles: prev.detalles.filter((_, i) => i !== index)
-    }));
-  };
-
-  const updateDetalle = (index: number, field: string, value: string | number) => {
-    setFormData(prev => {
-      const newDetalles = prev.detalles.map((detalle, i) => {
-        if (i === index) {
-          const updatedDetalle = { ...detalle, [field]: value };
-          
-          // Si se cambió el producto, actualizar automáticamente el precio
-          if (field === 'productoId' && value) {
-            const producto = productos.find(p => p.id.toString() === value.toString());
-            if (producto) {
-              updatedDetalle.precioUnitario = parseFloat(producto.precio.toString());
-            }
-          }
-          
-          return updatedDetalle;
-        }
-        return detalle;
-      });
-      
-      return {
-        ...prev,
-        detalles: newDetalles
-      };
-    });
-  };
-
-  // Filtrar pedidos según los criterios de búsqueda y filtro
+  // Filtrar pedidos
   const filteredPedidos = pedidos.filter(pedido => {
-    const cliente = pedido.cliente;
-    const matchesSearch = searchTerm === "" || 
-      pedido.id.toString().includes(searchTerm.toLowerCase()) ||
-      (cliente && `${cliente.nombre} ${cliente.apellido}`.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      pedido.direccionEntrega.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = 
+      pedido.cliente?.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pedido.cliente?.apellido?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pedido.direccionEntrega.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pedido.id.toString().includes(searchTerm);
     
-    const matchesFilter = filterEstado === "todos" || pedido.estado === filterEstado;
+    const matchesStatus = statusFilter === "todos" || pedido.estado === statusFilter;
     
-    return matchesSearch && matchesFilter;
+    return matchesSearch && matchesStatus;
   });
 
-  // Calcular estadísticas en tiempo real
-  const pedidosEntregados = pedidos.filter(p => p.estado === 'entregado');
-  const tiemposEntrega = pedidosEntregados
-    .map(p => calcularTiempoEntrega(p.createdAt, p.fechaEntrega))
-    .filter(t => t > 0);
-  
-  const tiempoPromedioEntrega = tiemposEntrega.length > 0 
-    ? Math.round(tiemposEntrega.reduce((a, b) => a + b, 0) / tiemposEntrega.length)
-    : 0;
-
-  // Definir los elementos del menú principal
-  const mainMenuItems = [
-    { title: "Dashboard", url: "/", icon: Home },
-    { title: "Pedidos", url: "/pedidos", icon: Package, badge: 25 },
-    { title: "Clientes", url: "/clientes", icon: Users },
-    { title: "Productos", url: "/productos", icon: ShoppingBag },
-    { title: "Repartidores", url: "/repartidores", icon: Truck },
-    { title: "Configuración", url: "/configuracion", icon: Settings },
-  ];
-
-  // Definir los elementos del menú de notificaciones
-  const notificationItems = [
-    { title: "Nuevos pedidos", url: "/notificaciones/pedidos", count: 5 },
-    { title: "Alertas de stock", url: "/notificaciones/stock", count: 3 },
-    { title: "Mensajes", url: "/notificaciones/mensajes", count: 2 },
-  ];
+  // Calcular estadísticas
+  const stats = {
+    total: pedidos.length,
+    pendientes: pedidos.filter(p => p.estado === 'pendiente').length,
+    entregados: pedidos.filter(p => p.estado === 'entregado').length,
+    totalVentas: pedidos.reduce((sum, p) => sum + p.total, 0),
+    promedioVenta: pedidos.length > 0 ? pedidos.reduce((sum, p) => sum + p.total, 0) / pedidos.length : 0
+  };
 
   if (loading || clientesLoading || productosLoading) {
     return (
-      <SidebarProvider>
-        <div className="flex min-h-screen">
-          <div className="flex-1 flex items-center justify-center">
+    <SidebarProvider>
+      <SidebarInset>
+          <div className="flex h-screen items-center justify-center">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-              <p className="mt-4 text-muted-foreground">Cargando pedidos...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+              <p className="mt-2 text-sm text-gray-600">Cargando pedidos...</p>
             </div>
           </div>
-        </div>
-      </SidebarProvider>
-    );
-  }
-
-  if (productosError) {
-    return (
-      <SidebarProvider>
-        <div className="flex min-h-screen">
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-red-500 mb-4">
-                <AlertCircle className="h-16 w-16 mx-auto mb-2" />
-                <h2 className="text-xl font-semibold">Error al cargar productos</h2>
-                <p className="text-muted-foreground mt-2">{productosError}</p>
-              </div>
-              <Button onClick={() => window.location.reload()}>
-                Reintentar
-              </Button>
-            </div>
-          </div>
-        </div>
+        </SidebarInset>
       </SidebarProvider>
     );
   }
 
   return (
     <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader className="border-b px-6 py-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Package className="h-4 w-4" />
-            </div>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-semibold">Delivery Tracker</span>
-              <span className="truncate text-xs text-muted-foreground">Gestión de entregas</span>
-            </div>
-          </div>
-        </SidebarHeader>
-        
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel>Menú Principal</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {mainMenuItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <a href={item.url} className="flex items-center gap-2">
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                        {item.badge && (
-                          <Badge variant="secondary" className="ml-auto">
-                            {item.badge}
-                          </Badge>
-                        )}
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-          
-          <SidebarGroup>
-            <SidebarGroupLabel>Notificaciones</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {notificationItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <a href={item.url} className="flex items-center gap-2">
-                        <Bell className="h-4 w-4" />
-                        <span>{item.title}</span>
-                        {item.count > 0 && (
-                          <Badge variant="destructive" className="ml-auto">
-                            {item.count}
-                          </Badge>
-                        )}
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-        
-        <SidebarFooter className="border-t p-4">
-          <div className="flex items-center justify-between">
-            <UserAuthNav />
-            <ThemeSwitcher />
-          </div>
-        </SidebarFooter>
-      </Sidebar>
-      
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold">Pedidos</h1>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <div className="text-sm text-muted-foreground">
-              <Clock className="inline h-4 w-4 mr-1" />
-              Bogotá: {horaActual}
-            </div>
+        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+          <div className="flex items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Pedidos</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
         </header>
         
-        {/* Contenido de la página */}
-        <main className="flex-1 space-y-4 p-4 sm:p-6 lg:p-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h1 className="text-2xl font-bold">Gestión de Pedidos</h1>
-            <Button>
-              <Package className="mr-2 h-4 w-4" />
-              Nuevo Pedido
-            </Button>
-          </div>
-
-          {/* Tarjetas de estadísticas de tiempo de entrega */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Pedidos</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{pedidos.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  Pedidos registrados
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pedidos Entregados</CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {pedidosEntregados.length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {pedidos.length > 0 ? Math.round((pedidosEntregados.length / pedidos.length) * 100) : 0}% del total
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Tiempo Promedio</CardTitle>
-                <Clock className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {formatearTiempo(tiempoPromedioEntrega)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Tiempo de entrega
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Tiempo Mínimo</CardTitle>
-                <TrendingDown className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {tiemposEntrega.length > 0 ? formatearTiempo(Math.min(...tiemposEntrega)) : '0 min'}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Entrega más rápida
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Tiempo Máximo</CardTitle>
-                <TrendingUp className="h-4 w-4 text-red-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
-                  {tiemposEntrega.length > 0 ? formatearTiempo(Math.max(...tiemposEntrega)) : '0 min'}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Entrega más lenta
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Controles de búsqueda y filtros */}
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-1 items-center space-x-2">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar pedidos..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-              <Select value={filterEstado} onValueChange={setFilterEstado}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filtrar por estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos los estados</SelectItem>
-                  <SelectItem value="pendiente">Pendiente</SelectItem>
-                  <SelectItem value="en_proceso">En proceso</SelectItem>
-                  <SelectItem value="en_camino">En camino</SelectItem>
-                  <SelectItem value="entregado">Entregado</SelectItem>
-                  <SelectItem value="cancelado">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
-              setIsCreateDialogOpen(open);
-              if (open) {
-                // Refrescar clientes cuando se abre el diálogo
-                fetchClientes();
-                // Establecer fecha por defecto al abrir
-                resetForm();
-              }
-            }}>
-              <DialogTrigger asChild>
-                <Button className="md:w-auto">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nuevo Pedido
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Crear Nuevo Pedido</DialogTitle>
-                  <DialogDescription>
-                    Complete la información del pedido y sus detalles.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="cliente">Cliente</Label>
-                        <Dialog open={isCreateClienteDialogOpen} onOpenChange={setIsCreateClienteDialogOpen}>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <Plus className="w-3 h-3 mr-1" />
-                              Nuevo
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-md">
-                            <DialogHeader>
-                              <DialogTitle>Crear Nuevo Cliente</DialogTitle>
-                              <DialogDescription>
-                                Complete la información del cliente.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="nombre-cliente">Nombre</Label>
-                                  <Input
-                                    id="nombre-cliente"
-                                    value={clienteFormData.nombre}
-                                    onChange={(e) => setClienteFormData(prev => ({ ...prev, nombre: e.target.value }))}
-                                    placeholder="Nombre del cliente"
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="apellido-cliente">Apellido</Label>
-                                  <Input
-                                    id="apellido-cliente"
-                                    value={clienteFormData.apellido}
-                                    onChange={(e) => setClienteFormData(prev => ({ ...prev, apellido: e.target.value }))}
-                                    placeholder="Apellido del cliente"
-                                  />
-                                </div>
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="telefono-cliente">Teléfono</Label>
-                                <Input
-                                  id="telefono-cliente"
-                                  value={clienteFormData.telefono}
-                                  onChange={(e) => setClienteFormData(prev => ({ ...prev, telefono: e.target.value }))}
-                                  placeholder="Número de teléfono"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="email-cliente">Email</Label>
-                                <Input
-                                  id="email-cliente"
-                                  type="email"
-                                  value={clienteFormData.email}
-                                  onChange={(e) => setClienteFormData(prev => ({ ...prev, email: e.target.value }))}
-                                  placeholder="Correo electrónico"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="direccion-cliente">Dirección</Label>
-                                <Textarea
-                                  id="direccion-cliente"
-                                  value={clienteFormData.direccion}
-                                  onChange={(e) => setClienteFormData(prev => ({ ...prev, direccion: e.target.value }))}
-                                  placeholder="Dirección completa del cliente"
-                                />
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button variant="outline" onClick={() => {
-                                setIsCreateClienteDialogOpen(false);
-                                resetClienteForm();
-                              }}>
-                                Cancelar
-                              </Button>
-                              <Button onClick={handleCreateCliente}>
-                                Crear Cliente
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                      <Select value={formData.clienteId} onValueChange={(value) => setFormData(prev => ({ ...prev, clienteId: value }))}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar cliente" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {clientes.map((cliente) => (
-                            <SelectItem key={cliente.id} value={cliente.id.toString()}>
-                              {cliente.nombre} {cliente.apellido}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="fechaEntrega">Fecha de Entrega</Label>
-                      <Input
-                        id="fechaEntrega"
-                        type="datetime-local"
-                        value={formData.fechaEntrega}
-                        onChange={(e) => setFormData(prev => ({ ...prev, fechaEntrega: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="direccion">Dirección de Entrega</Label>
-                    <Textarea
-                      id="direccion"
-                      placeholder={(() => {
-                        const clienteSeleccionado = clientes.find(c => c.id.toString() === formData.clienteId);
-                        return clienteSeleccionado?.direccion || "Ingrese la dirección completa";
-                      })()}
-                      value={formData.direccionEntrega}
-                      onChange={(e) => setFormData(prev => ({ ...prev, direccionEntrega: e.target.value }))}
-                    />
-                    {(() => {
-                      const clienteSeleccionado = clientes.find(c => c.id.toString() === formData.clienteId);
-                      return clienteSeleccionado && (
-                        <div className="text-xs text-muted-foreground space-y-1">
-                          <p><strong>Cliente:</strong> {clienteSeleccionado.nombre} {clienteSeleccionado.apellido}</p>
-                          <p><strong>Teléfono:</strong> {clienteSeleccionado.telefono}</p>
-                          <p><strong>Email:</strong> {clienteSeleccionado.email}</p>
-                          {clienteSeleccionado.direccion && (
-                            <p><strong>Dirección registrada:</strong> {clienteSeleccionado.direccion}</p>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Label>Detalles del Pedido</Label>
-                      <Button type="button" variant="outline" size="sm" onClick={addDetalle}>
-                        <Plus className="w-4 h-4 mr-1" />
-                        Agregar Producto
-                      </Button>
-                    </div>
-                    {formData.detalles.map((detalle, index) => (
-                      <div key={index} className="grid grid-cols-4 gap-2 items-end">
-                        <div className="space-y-2">
-                          <Label>Producto</Label>
-                          <Select 
-                            value={detalle.productoId} 
-                            onValueChange={(value) => {
-                              const producto = productos.find(p => p.id.toString() === value);
-                              updateDetalle(index, 'productoId', value);
-                              if (producto) {
-                                updateDetalle(index, 'precioUnitario', producto.precio);
-                              }
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {productos.map((producto) => (
-                                <SelectItem key={producto.id} value={producto.id.toString()}>
-                                  {producto.nombre} - ${producto.precio}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Cantidad</Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={detalle.cantidad}
-                            onChange={(e) => updateDetalle(index, 'cantidad', parseInt(e.target.value) || 1)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Precio Unit.</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={detalle.precioUnitario}
-                            onChange={(e) => updateDetalle(index, 'precioUnitario', parseFloat(e.target.value) || 0)}
-                          />
-                        </div>
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => removeDetalle(index)}
-                          disabled={formData.detalles.length === 1}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <div className="text-right">
-                      <p className="text-lg font-semibold">
-                        Total: ${formData.detalles.reduce((sum, detalle) => sum + (detalle.cantidad * detalle.precioUnitario), 0).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleCreatePedido}>
-                    Crear Pedido
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {/* Tabla de pedidos */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Pedidos Recientes</CardTitle>
-              <CardDescription>Gestiona todos los pedidos desde aquí</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[100px]">ID</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Fecha/Hora</TableHead>
-                    <TableHead>Dirección</TableHead>
-                    <TableHead>Repartidor</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Tiempo Entrega</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="w-[70px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPedidos.map((pedido) => (
-                    <TableRow key={pedido.id}>
-                      <TableCell className="font-medium">#{pedido.id}</TableCell>
-                      <TableCell>
-                        {pedido.cliente ? `${pedido.cliente.nombre} ${pedido.cliente.apellido}` : 'Cliente no encontrado'}
-                      </TableCell>
-                      <TableCell>
-                        {formatearFechaBogota(pedido.createdAt)}
-                      </TableCell>
-                      <TableCell className="max-w-[200px] truncate">{pedido.direccionEntrega}</TableCell>
-                      <TableCell>
-                        {pedido.asignaciones && pedido.asignaciones.length > 0 
-                          ? `${pedido.asignaciones[0].repartidor?.nombre || ''} ${pedido.asignaciones[0].repartidor?.apellido || ''}`.trim() || 'Sin asignar'
-                          : 'Sin asignar'
-                        }
-                      </TableCell>
-                      <TableCell>{getEstadoBadge(pedido.estado)}</TableCell>
-                      <TableCell>
-                        {pedido.estado === 'entregado' && pedido.fechaEntrega ? (
-                          <span className="text-sm text-muted-foreground">
-                            {formatearTiempo(calcularTiempoEntrega(pedido.createdAt, pedido.fechaEntrega))}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">${pedido.total.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Abrir menú</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => openViewDialog(pedido)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              Ver detalles
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openEditDialog(pedido)}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Editar pedido
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600">
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Eliminar pedido
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Esta acción no se puede deshacer. Esto eliminará permanentemente el pedido #{pedido.id}.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeletePedido(pedido.id)} className="bg-red-600 hover:bg-red-700">
-                                    Eliminar
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          {/* Dialog para editar pedido */}
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Editar Pedido #{selectedPedido?.id}</DialogTitle>
-                <DialogDescription>
-                  Modifique la información del pedido.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="cliente-edit">Cliente</Label>
-                    <Select value={formData.clienteId} onValueChange={(value) => setFormData(prev => ({ ...prev, clienteId: value }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar cliente" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clientes.map((cliente) => (
-                          <SelectItem key={cliente.id} value={cliente.id.toString()}>
-                            {cliente.nombre} {cliente.apellido}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="fechaEntrega-edit">Fecha de Entrega</Label>
-                    <Input
-                      id="fechaEntrega-edit"
-                      type="datetime-local"
-                      value={formData.fechaEntrega}
-                      onChange={(e) => setFormData(prev => ({ ...prev, fechaEntrega: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="direccion-edit">Dirección de Entrega</Label>
-                  <Textarea
-                    id="direccion-edit"
-                    placeholder="Ingrese la dirección completa"
-                    value={formData.direccionEntrega}
-                    onChange={(e) => setFormData(prev => ({ ...prev, direccionEntrega: e.target.value }))}
-                  />
-                </div>
-                
-                {/* Detalles del pedido editables */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-base font-medium">Detalles del Pedido</Label>
-                    <Button type="button" variant="outline" size="sm" onClick={addDetalle}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Agregar Producto
-                    </Button>
-                  </div>
-                  
-                  {formData.detalles.map((detalle, index) => (
-                    <div key={index} className="grid grid-cols-12 gap-2 items-end p-3 border rounded-lg">
-                      <div className="col-span-5">
-                        <Label className="text-sm">Producto</Label>
-                        <Select 
-                          value={detalle.productoId} 
-                          onValueChange={(value) => updateDetalle(index, 'productoId', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar producto" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {productos.map((producto) => (
-                              <SelectItem key={producto.id} value={producto.id.toString()}>
-                                {producto.nombre} - ${parseFloat(producto.precio.toString()).toFixed(2)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="col-span-2">
-                        <Label className="text-sm">Cantidad</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={detalle.cantidad}
-                          onChange={(e) => updateDetalle(index, 'cantidad', parseInt(e.target.value) || 1)}
-                        />
-                      </div>
-                      
-                      <div className="col-span-3">
-                        <Label className="text-sm">Precio Unitario</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={detalle.precioUnitario}
-                          onChange={(e) => updateDetalle(index, 'precioUnitario', parseFloat(e.target.value) || 0)}
-                        />
-                      </div>
-                      
-                      <div className="col-span-1">
-                        <Label className="text-sm">Subtotal</Label>
-                        <p className="text-sm font-medium">
-                          ${(detalle.cantidad * detalle.precioUnitario).toFixed(2)}
-                        </p>
-                      </div>
-                      
-                      <div className="col-span-1">
-                        {formData.detalles.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeDetalle(index)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  
-                  <div className="flex justify-end pt-4 border-t">
-                    <div className="text-right">
-                      <Label className="text-sm font-medium text-muted-foreground">Total del Pedido</Label>
-                      <p className="text-lg font-bold">
-                        ${formData.detalles.reduce((sum, detalle) => sum + (detalle.cantidad * detalle.precioUnitario), 0).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleUpdatePedido}>
-                  Actualizar Pedido
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Dialog para ver detalles del pedido */}
-          <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Detalles del Pedido #{selectedPedido?.id}</DialogTitle>
-                <DialogDescription>
-                  Información completa del pedido y sus detalles.
-                </DialogDescription>
-              </DialogHeader>
-              {selectedPedido && (
-                <div className="grid gap-6 py-4">
-                  {/* Información general */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-muted-foreground">Cliente</Label>
-                      <p className="text-sm">
-                        {selectedPedido.cliente ? `${selectedPedido.cliente.nombre} ${selectedPedido.cliente.apellido}` : 'Cliente no encontrado'}
-                      </p>
-                      {selectedPedido.cliente && (
-                        <>
-                          <p className="text-xs text-muted-foreground">{selectedPedido.cliente.email}</p>
-                          <p className="text-xs text-muted-foreground">{selectedPedido.cliente.telefono}</p>
-                        </>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-muted-foreground">Estado</Label>
-                      <div>{getEstadoBadge(selectedPedido.estado)}</div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-muted-foreground">Fecha de Creación</Label>
-                      <p className="text-sm">
-                        {formatearFechaCompletaBogota(selectedPedido.createdAt)}
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-muted-foreground">Fecha de Entrega</Label>
-                      <p className="text-sm">
-                        {selectedPedido.fechaEntrega 
-                          ? formatearFechaCompletaBogota(selectedPedido.fechaEntrega)
-                          : 'No programada'
-                        }
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Dirección de entrega */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-muted-foreground">Dirección de Entrega</Label>
-                    <p className="text-sm bg-muted p-3 rounded-md">{selectedPedido.direccionEntrega}</p>
-                  </div>
-
-                  {/* Repartidor asignado */}
-                  {selectedPedido.asignaciones && selectedPedido.asignaciones.length > 0 && (
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-muted-foreground">Repartidor Asignado</Label>
-                      <p className="text-sm">
-                        {selectedPedido.asignaciones[0].repartidor 
-                          ? `${selectedPedido.asignaciones[0].repartidor.nombre} ${selectedPedido.asignaciones[0].repartidor.apellido}`
-                          : 'Sin asignar'
-                        }
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Asignado el {formatearSoloFechaBogota(selectedPedido.asignaciones[0].fechaAsignacion)}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Tiempo de entrega */}
-                  {selectedPedido.estado === 'entregado' && selectedPedido.fechaEntrega && (
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-muted-foreground">Tiempo de Entrega</Label>
-                      <p className="text-lg font-semibold text-blue-600">
-                        {formatearTiempo(calcularTiempoEntrega(selectedPedido.createdAt, selectedPedido.fechaEntrega))}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Detalles del pedido */}
-                  {selectedPedido.detalles && selectedPedido.detalles.length > 0 && (
-                    <div className="space-y-4">
-                      <Label className="text-sm font-medium text-muted-foreground">Productos del Pedido</Label>
-                      <div className="border rounded-md">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Producto</TableHead>
-                              <TableHead className="text-center">Cantidad</TableHead>
-                              <TableHead className="text-right">Precio Unit.</TableHead>
-                              <TableHead className="text-right">Subtotal</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {selectedPedido.detalles.map((detalle) => (
-                              <TableRow key={detalle.id}>
-                                <TableCell>
-                                  {detalle.producto?.nombre || `Producto ID: ${detalle.productoId}`}
-                                </TableCell>
-                                <TableCell className="text-center">{detalle.cantidad}</TableCell>
-                                <TableCell className="text-right">${detalle.precioUnitario.toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-medium">${detalle.subtotal.toFixed(2)}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                      <div className="flex justify-end">
-                        <div className="text-right">
-                          <p className="text-lg font-bold">Total: ${selectedPedido.total.toFixed(2)}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-                  Cerrar
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+        <main className="flex-1 space-y-4 p-4 md:p-6 pt-6">
+          <PedidoActions onCreateClick={handleCreateClick} />
+          
+          <PedidoStats 
+            pedidos={pedidos}
+            horaActual={currentTime.toLocaleTimeString('es-CO')}
+            stats={stats}
+            currentTime={currentTime}
+          />
+          
+          <PedidoFilters
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            filterEstado={statusFilter}
+            setFilterEstado={setStatusFilter}
+          />
+          
+          <PedidosTable
+            pedidos={filteredPedidos}
+            onView={handleView}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+          
+          <PedidoForm
+            isOpen={isFormDialogOpen}
+            onOpenChange={setIsFormDialogOpen}
+            formData={formData}
+            setFormData={setFormData}
+            clientes={clientes}
+            productos={productos}
+            onSubmit={handleSubmit}
+            onCreateCliente={handleCreateCliente}
+            fetchClientes={fetchClientes}
+            resetForm={resetForm}
+          />
+          
+          <ClienteForm
+            onCreateCliente={handleCreateCliente}
+            fetchClientes={fetchClientes}
+          />
+          
+          <PedidoViewDialog
+            isOpen={isViewDialogOpen}
+            onOpenChange={setIsViewDialogOpen}
+            pedido={selectedPedido}
+          />
         </main>
       </SidebarInset>
     </SidebarProvider>
