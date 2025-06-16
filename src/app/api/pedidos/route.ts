@@ -18,6 +18,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/utils';
+import { db } from '@/db';
+import { clientes, productos, repartidores } from '@/db/schema';
+import { eq, and, sql } from 'drizzle-orm';
 import {
   getPedidosByOrganization,
   getPedidoById,
@@ -149,12 +152,13 @@ export async function POST(request: NextRequest) {
 
     // Obtener datos del cuerpo de la solicitud
     const pedidoData = await request.json();
+    const { clienteId, direccionEntrega, fechaEntrega, estado, total, detalles, repartidorId } = pedidoData;
     
     // Validar datos requeridos del pedido
-    if (!pedidoData.clienteId || !pedidoData.total || !pedidoData.detalles || !Array.isArray(pedidoData.detalles)) {
+    if (!clienteId || !direccionEntrega || !total || !detalles || !Array.isArray(detalles)) {
       return Response.json(
         { 
-          error: 'Faltan campos requeridos (clienteId, total, detalles)',
+          error: 'Faltan campos requeridos (clienteId, direccionEntrega, total, detalles)',
           code: 'INVALID_DATA'
         },
         { status: 400 }
@@ -162,7 +166,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Validar que haya al menos un detalle
-    if (pedidoData.detalles.length === 0) {
+    if (detalles.length === 0) {
       return Response.json(
         { 
           error: 'El pedido debe tener al menos un detalle',
@@ -172,22 +176,149 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Validar cada detalle del pedido
-    for (const detalle of pedidoData.detalles) {
-      if (!detalle.productoId || !detalle.cantidad || !detalle.precioUnitario) {
+    // Validar que el total sea un número positivo
+    if (!total || total <= 0) {
+      return Response.json(
+        { 
+          error: 'El total del pedido debe ser mayor a 0',
+          code: 'INVALID_DATA'
+        },
+        { status: 400 }
+      );
+    }
+    
+    // Verificar que el cliente pertenece a la organización
+    const cliente = await db.select()
+      .from(clientes)
+      .where(and(
+        eq(clientes.id, clienteId),
+        eq(clientes.organizationId, Number(user.organizationId))
+      ))
+      .limit(1);
+
+    if (cliente.length === 0) {
+      return Response.json(
+        { 
+          error: 'Cliente no encontrado o no pertenece a su organización',
+          code: 'NOT_FOUND'
+        },
+        { status: 404 }
+      );
+    }
+    
+    // Validar productos y stock
+    const productosIds = detalles.map((d: { productoId: number }) => d.productoId);
+    const productosEncontrados = await db.select()
+      .from(productos)
+      .where(and(
+        sql`${productos.id} IN (${productosIds.join(',')})`,
+        eq(productos.organizationId, Number(user.organizationId))
+      ));
+
+    if (productosEncontrados.length !== productosIds.length) {
+      return Response.json(
+        { 
+          error: 'Uno o más productos no existen o no pertenecen a su organización',
+          code: 'INVALID_DATA'
+        },
+        { status: 400 }
+      );
+    }
+    
+    // Validar stock disponible
+    const stockErrors = [];
+    for (const detalle of detalles) {
+      const producto = productosEncontrados.find(p => p.id === detalle.productoId);
+      if (producto && producto.stock < detalle.cantidad) {
+        stockErrors.push({
+          producto: producto.nombre,
+          stockDisponible: producto.stock,
+          cantidadSolicitada: detalle.cantidad
+        });
+      }
+    }
+
+    if (stockErrors.length > 0) {
+      return Response.json(
+        { 
+          error: 'Stock insuficiente para algunos productos',
+          code: 'INSUFFICIENT_STOCK',
+          stockErrors
+        },
+        { status: 400 }
+      );
+    }
+    
+    // Validar repartidor si está asignado
+    if (repartidorId) {
+      const repartidor = await db.select()
+        .from(repartidores)
+        .where(and(
+          eq(repartidores.id, repartidorId),
+          eq(repartidores.organizationId, Number(user.organizationId))
+        ))
+        .limit(1);
+
+      if (repartidor.length === 0) {
         return Response.json(
           { 
-            error: 'Cada detalle debe tener productoId, cantidad y precioUnitario',
+            error: 'Repartidor no encontrado o no pertenece a su organización',
+            code: 'NOT_FOUND'
+          },
+          { status: 400 }
+        );
+      }
+
+      if (!repartidor[0].disponible) {
+        return Response.json(
+          { 
+            error: 'El repartidor seleccionado no está disponible',
+            code: 'REPARTIDOR_NOT_AVAILABLE'
+          },
+          { status: 400 }
+        );
+      }
+    }
+    
+    // Calcular y validar el total
+    let totalCalculado = 0;
+    for (const detalle of detalles) {
+      const producto = productosEncontrados.find(p => p.id === detalle.productoId);
+      if (producto) {
+        const precioUnitario = detalle.precioUnitario || parseFloat(producto.precio);
+        totalCalculado += detalle.cantidad * precioUnitario;
+      }
+    }
+
+    // Permitir una pequeña diferencia por redondeo
+    if (Math.abs(total - totalCalculado) > 0.01) {
+      return Response.json(
+        { 
+          error: 'El total del pedido no coincide con el cálculo de los productos',
+          code: 'INVALID_TOTAL',
+          totalCalculado,
+          totalEnviado: total
+        },
+        { status: 400 }
+      );
+    }
+    
+    // Validar cada detalle del pedido
+    for (const detalle of detalles as Array<{ productoId: number; cantidad: number; precioUnitario?: number; notaProducto?: string }>) {
+      if (!detalle.productoId || !detalle.cantidad) {
+        return Response.json(
+          { 
+            error: 'Cada detalle debe tener productoId y cantidad',
             code: 'INVALID_DATA'
           },
           { status: 400 }
         );
       }
       
-      if (detalle.cantidad <= 0 || detalle.precioUnitario <= 0) {
+      if (detalle.cantidad <= 0) {
         return Response.json(
           { 
-            error: 'La cantidad y precio unitario deben ser números positivos',
+            error: 'La cantidad debe ser un número positivo',
             code: 'INVALID_DATA'
           },
           { status: 400 }
@@ -195,11 +326,29 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Separar los detalles del pedido
-    const { detalles, ...pedidoSinDetalles } = pedidoData;
+    // Crear el pedido completo con detalles mejorados
+    const detallesConPrecios = detalles.map((detalle: { productoId: number; cantidad: number; precioUnitario?: number; notaProducto?: string }) => {
+      const producto = productosEncontrados.find(p => p.id === detalle.productoId);
+      const precioUnitario = detalle.precioUnitario || parseFloat(producto?.precio || '0');
+      const subtotal = precioUnitario * detalle.cantidad;
+      return {
+        ...detalle,
+        precioUnitario: precioUnitario.toString(),
+        subtotal: subtotal.toString()
+      };
+    });
+    
+    const pedidoCompleto = {
+      clienteId,
+      direccionEntrega,
+      fechaEntrega: fechaEntrega ? new Date(fechaEntrega) : null,
+      estado: estado || 'pendiente',
+      total,
+      repartidorId: repartidorId || null
+    };
     
     // Crear el pedido completo
-    const result = await createPedidoCompleto(pedidoSinDetalles, detalles, Number(user.organizationId));
+    const result = await createPedidoCompleto(pedidoCompleto, detallesConPrecios, Number(user.organizationId));
     
     return Response.json({
       success: true,

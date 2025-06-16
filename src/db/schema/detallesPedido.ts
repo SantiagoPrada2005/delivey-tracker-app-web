@@ -1,4 +1,4 @@
-import { mysqlTable, serial, int, varchar } from 'drizzle-orm/mysql-core';
+import { mysqlTable, serial, int, varchar, decimal } from 'drizzle-orm/mysql-core';
 import { relations } from 'drizzle-orm';
 import { pedidos } from './pedidos';
 import { productos } from './productos';
@@ -10,6 +10,8 @@ export const detallesPedido = mysqlTable('detalles_pedido', {
   productoId: int('producto_id', {unsigned: true}).notNull().references(() => productos.id, {onDelete: 'cascade', onUpdate: 'cascade'}),
   notaProducto: varchar('nota_producto', { length: 100 }),
   cantidad: int('cantidad').notNull(),
+  precioUnitario: decimal('precio_unitario', { precision: 10, scale: 2 }).notNull(),
+  subtotal: decimal('subtotal', { precision: 10, scale: 2 }).notNull(),
 });
 
 // Definir relaciones
