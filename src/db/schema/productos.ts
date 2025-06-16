@@ -1,4 +1,4 @@
-import { mysqlTable, serial, varchar, text, int, decimal, timestamp } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, text, int, decimal, timestamp } from 'drizzle-orm/mysql-core';
 import { relations } from 'drizzle-orm';
 import { detallesPedido } from './detallesPedido';
 import { organizations } from './organizations';
@@ -6,7 +6,7 @@ import { categoriaProducto } from './categoriaProducto';
 
 // Tabla de productos
 export const productos = mysqlTable('productos', {
-  id: serial('id').primaryKey(),
+  id: int('id', {unsigned: true}).primaryKey().autoincrement().notNull(),
   nombre: varchar('nombre', { length: 100 }).notNull(),
   descripcion: text('descripcion'),
   precio: decimal('precio', { precision: 10, scale: 2 }).notNull(),

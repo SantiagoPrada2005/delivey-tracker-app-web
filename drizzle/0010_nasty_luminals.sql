@@ -1,0 +1,1 @@
+ALTER TABLE `pedidos` MODIFY COLUMN `id` int unsigned AUTO_INCREMENT NOT NULL;

@@ -21,7 +21,7 @@ export const repartidores = mysqlTable('repartidores', {
   telefono: varchar('telefono', { length: 20 }).notNull(),
   email: varchar('email', { length: 100 }),
   disponible: boolean('disponible').default(true),
-  organizationId: int('organization_id', { unsigned: true })
+  organization_id: int('organization_id', { unsigned: true })
     .references(() => organizations.id, { onDelete: 'cascade', onUpdate: 'cascade' })
     .notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -38,7 +38,7 @@ export const repartidoresRelations = relations(repartidores, ({ one, many }) => 
   }),
   // Relación con la organización
   organization: one(organizations, {
-    fields: [repartidores.organizationId],
+    fields: [repartidores.organization_id],
     references: [organizations.id],
     relationName: 'organizationRepartidores'
   }),

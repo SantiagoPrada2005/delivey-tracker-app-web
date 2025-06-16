@@ -29,6 +29,7 @@ import {
   ClienteFormData,
   generarFechaEntregaPorDefecto
 } from "@/components/pedidos";
+import { authenticatedFetch } from "@/lib/auth/client-utils";
 
 export default function PedidosPage() {
   const { toast } = useToast();
@@ -79,10 +80,11 @@ export default function PedidosPage() {
   const fetchPedidos = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/pedidos');
+      const response = await authenticatedFetch('/api/pedidos');
       if (response.ok) {
         const data = await response.json();
-        setPedidos(data);
+        // Asegurar que data sea un array
+        setPedidos(Array.isArray(data) ? data : []);
       } else {
         throw new Error('Error al cargar pedidos');
       }
@@ -100,15 +102,31 @@ export default function PedidosPage() {
 
   const handleSubmit = async () => {
     try {
+      // Calcular el total basado en los detalles
+      const total = formData.detalles.reduce((sum, detalle) => {
+        return sum + (detalle.cantidad * detalle.precioUnitario);
+      }, 0);
+
+      // Preparar los datos para enviar incluyendo el total
+      const pedidoData = {
+        ...formData,
+        total,
+        clienteId: parseInt(formData.clienteId),
+        detalles: formData.detalles.map(detalle => ({
+          ...detalle,
+          productoId: parseInt(detalle.productoId)
+        }))
+      };
+
       const url = editingPedido ? `/api/pedidos/${editingPedido.id}` : '/api/pedidos';
       const method = editingPedido ? 'PUT' : 'POST';
       
-      const response = await fetch(url, {
+      const response = await authenticatedFetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(pedidoData),
       });
 
       if (response.ok) {
@@ -154,7 +172,7 @@ export default function PedidosPage() {
 
   const handleDelete = async (pedido: Pedido) => {
     try {
-      const response = await fetch(`/api/pedidos/${pedido.id}`, {
+      const response = await authenticatedFetch(`/api/pedidos/${pedido.id}`, {
         method: 'DELETE',
       });
 
@@ -216,7 +234,7 @@ export default function PedidosPage() {
   };
 
   // Filtrar pedidos
-  const filteredPedidos = pedidos.filter(pedido => {
+  const filteredPedidos = Array.isArray(pedidos) ? pedidos.filter(pedido => {
     const matchesSearch = 
       pedido.cliente?.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       pedido.cliente?.apellido?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -226,15 +244,16 @@ export default function PedidosPage() {
     const matchesStatus = statusFilter === "todos" || pedido.estado === statusFilter;
     
     return matchesSearch && matchesStatus;
-  });
+  }) : [];
 
   // Calcular estadísticas
+  const pedidosArray = Array.isArray(pedidos) ? pedidos : [];
   const stats = {
-    total: pedidos.length,
-    pendientes: pedidos.filter(p => p.estado === 'pendiente').length,
-    entregados: pedidos.filter(p => p.estado === 'entregado').length,
-    totalVentas: pedidos.reduce((sum, p) => sum + p.total, 0),
-    promedioVenta: pedidos.length > 0 ? pedidos.reduce((sum, p) => sum + p.total, 0) / pedidos.length : 0
+    total: pedidosArray.length,
+    pendientes: pedidosArray.filter(p => p.estado === 'pendiente').length,
+    entregados: pedidosArray.filter(p => p.estado === 'entregado').length,
+    totalVentas: pedidosArray.reduce((sum, p) => sum + p.total, 0),
+    promedioVenta: pedidosArray.length > 0 ? pedidosArray.reduce((sum, p) => sum + p.total, 0) / pedidosArray.length : 0
   };
 
   if (loading || clientesLoading || productosLoading) {

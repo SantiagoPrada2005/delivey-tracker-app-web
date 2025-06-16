@@ -16,8 +16,8 @@
  * los resultados según la organización a la que pertenece el usuario.
  */
 
-import { NextRequest } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/auth-utils';
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth/utils';
 import {
   getPedidosByOrganization,
   getPedidoById,
@@ -34,15 +34,23 @@ import {
 export async function GET(request: NextRequest) {
   try {
     // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    const authResult = await requireAuth(request);
     
-    if (!user || !user.organizationId) {
-      return Response.json(
+    // Si requireAuth retorna NextResponse, es un error de autenticación
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    
+    const { user } = authResult;
+    
+    // Verificar que el usuario tenga organización asignada
+    if (!user.organizationId) {
+      return NextResponse.json(
         { 
-          error: 'Usuario no autenticado o sin organización asignada',
-          code: 'AUTH_REQUIRED'
+          error: 'Usuario sin organización asignada',
+          code: 'NO_ORGANIZATION'
         },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
@@ -119,15 +127,23 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    const authResult = await requireAuth(request);
     
-    if (!user || !user.organizationId) {
-      return Response.json(
+    // Si requireAuth retorna NextResponse, es un error de autenticación
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    
+    const { user } = authResult;
+    
+    // Verificar que el usuario tenga organización asignada
+    if (!user.organizationId) {
+      return NextResponse.json(
         { 
-          error: 'Usuario no autenticado o sin organización asignada',
-          code: 'AUTH_REQUIRED'
+          error: 'Usuario sin organización asignada',
+          code: 'NO_ORGANIZATION'
         },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
@@ -210,15 +226,23 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    const authResult = await requireAuth(request);
     
-    if (!user || !user.organizationId) {
-      return Response.json(
+    // Si requireAuth retorna NextResponse, es un error de autenticación
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    
+    const { user } = authResult;
+    
+    // Verificar que el usuario tenga organización asignada
+    if (!user.organizationId) {
+      return NextResponse.json(
         { 
-          error: 'Usuario no autenticado o sin organización asignada',
-          code: 'AUTH_REQUIRED'
+          error: 'Usuario sin organización asignada',
+          code: 'NO_ORGANIZATION'
         },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
@@ -290,15 +314,23 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Obtener usuario autenticado
-    const user = await getAuthenticatedUser(request);
+    const authResult = await requireAuth(request);
     
-    if (!user || !user.organizationId) {
-      return Response.json(
+    // Si requireAuth retorna NextResponse, es un error de autenticación
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    
+    const { user } = authResult;
+    
+    // Verificar que el usuario tenga organización asignada
+    if (!user.organizationId) {
+      return NextResponse.json(
         { 
-          error: 'Usuario no autenticado o sin organización asignada',
-          code: 'AUTH_REQUIRED'
+          error: 'Usuario sin organización asignada',
+          code: 'NO_ORGANIZATION'
         },
-        { status: 401 }
+        { status: 403 }
       );
     }
 

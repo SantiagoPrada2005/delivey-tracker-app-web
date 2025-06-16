@@ -1,4 +1,4 @@
-import { mysqlTable, serial, int, decimal, text, timestamp, mysqlEnum } from 'drizzle-orm/mysql-core';
+import { mysqlTable, int, decimal, text, timestamp, mysqlEnum } from 'drizzle-orm/mysql-core';
 import { relations } from 'drizzle-orm';
 import { clientes } from './clientes';
 import { detallesPedido } from './detallesPedido';
@@ -7,7 +7,7 @@ import { organizations } from './organizations';
 
 // Tabla de pedidos
 export const pedidos = mysqlTable('pedidos', {
-  id: serial('id').primaryKey(),
+  id: int('id', {unsigned: true}).primaryKey().autoincrement().notNull(),
   clienteId: int('cliente_id').notNull(),
   estado: mysqlEnum('estado', ['pendiente', 'en_proceso', 'en_camino', 'entregado', 'cancelado']).notNull().default('pendiente'),
   total: decimal('total', { precision: 10, scale: 2 }).notNull(),
