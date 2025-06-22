@@ -260,7 +260,7 @@ const PedidoFormAdvanced: React.FC<PedidoFormAdvancedProps> = ({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-2">
                 <Label htmlFor="cliente">Cliente *</Label>
                 <Select
@@ -397,7 +397,7 @@ const PedidoFormAdvanced: React.FC<PedidoFormAdvancedProps> = ({
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Formulario para agregar productos */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg bg-muted/50">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 p-4 border rounded-lg bg-muted/50">
               <div className="space-y-2">
                 <Label htmlFor="producto">Producto</Label>
                 <Select
@@ -466,17 +466,96 @@ const PedidoFormAdvanced: React.FC<PedidoFormAdvancedProps> = ({
             {/* Lista de productos agregados */}
             {pedido.detalles.length > 0 ? (
               <div className="space-y-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Producto</TableHead>
-                      <TableHead className="text-center">Cantidad</TableHead>
-                      <TableHead className="text-center">Precio Unit.</TableHead>
-                      <TableHead className="text-center">Subtotal</TableHead>
-                      <TableHead className="text-center">Stock</TableHead>
-                      <TableHead className="text-center">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                {/* Vista móvil - Cards */}
+                <div className="block lg:hidden space-y-3">
+                  {pedido.detalles.map((detalle, index) => {
+                    const producto = getProductoById(detalle.productoId);
+                    const stockValidation = getStockValidation(detalle.productoId);
+                    
+                    return (
+                      <Card key={index} className="p-3">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{producto?.nombre || 'Producto no encontrado'}</p>
+                              {detalle.notaProducto && (
+                                <p className="text-xs text-muted-foreground mt-1">{detalle.notaProducto}</p>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveProducto(index)}
+                              className="text-destructive hover:text-destructive h-8 w-8 p-0"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Cantidad</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={detalle.cantidad}
+                                onChange={(e) => handleUpdateDetalle(index, 'cantidad', parseInt(e.target.value) || 1)}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Precio Unit.</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={detalle.precioUnitario}
+                                onChange={(e) => handleUpdateDetalle(index, 'precioUnitario', parseFloat(e.target.value) || 0)}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <span className="text-xs text-muted-foreground">Subtotal:</span>
+                              <div className="font-medium">${calculateSubtotal(detalle.cantidad, detalle.precioUnitario).toFixed(2)}</div>
+                            </div>
+                            <div>
+                              <span className="text-xs text-muted-foreground">Stock:</span>
+                              <div className={`font-medium ${stockValidation && !stockValidation.esValido ? 'text-destructive' : 'text-green-600'}`}>
+                                {stockValidation ? stockValidation.stockDisponible : (producto?.stock || 0)}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {stockValidation && !stockValidation.esValido && (
+                            <Alert className="border-destructive">
+                              <AlertTriangle className="h-4 w-4" />
+                              <AlertDescription className="text-xs">
+                                Stock insuficiente: disponible {stockValidation.stockDisponible}, solicitado {stockValidation.cantidadSolicitada}
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+                
+                {/* Vista desktop - Tabla */}
+                <div className="hidden lg:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[150px]">Producto</TableHead>
+                        <TableHead className="text-center w-24">Cantidad</TableHead>
+                        <TableHead className="text-center w-28">Precio Unit.</TableHead>
+                        <TableHead className="text-center w-24">Subtotal</TableHead>
+                        <TableHead className="text-center w-20">Stock</TableHead>
+                        <TableHead className="text-center w-20">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
                   <TableBody>
                     {pedido.detalles.map((detalle, index) => {
                       const producto = getProductoById(detalle.productoId);
@@ -548,13 +627,13 @@ const PedidoFormAdvanced: React.FC<PedidoFormAdvancedProps> = ({
                 {stockValidations.some(s => !s.esValido) && (
                   <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
+                    <AlertDescription className="text-sm">
                       <strong>Stock insuficiente:</strong>
-                      <ul className="mt-2 list-disc list-inside">
+                      <ul className="mt-2 list-disc list-inside space-y-1">
                         {stockValidations
                           .filter(s => !s.esValido)
                           .map((stock, index) => (
-                            <li key={index}>
+                            <li key={index} className="text-xs sm:text-sm break-words">
                               {stock.nombreProducto}: disponible {stock.stockDisponible}, solicitado {stock.cantidadSolicitada}
                             </li>
                           ))
@@ -563,19 +642,21 @@ const PedidoFormAdvanced: React.FC<PedidoFormAdvancedProps> = ({
                     </AlertDescription>
                   </Alert>
                 )}
+                </div>
 
+                
                 <Separator />
 
                 {/* Total del pedido */}
-                <div className="flex justify-end">
-                  <Card className="w-64">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center justify-between text-lg font-semibold">
+                <div className="flex justify-center sm:justify-end">
+                  <Card className="w-full sm:w-64">
+                    <CardContent className="pt-4 sm:pt-6">
+                      <div className="flex items-center justify-between text-base sm:text-lg font-semibold">
                         <span className="flex items-center gap-2">
-                          <Calculator className="h-5 w-5" />
+                          <Calculator className="h-4 w-4 sm:h-5 sm:w-5" />
                           Total:
                         </span>
-                        <span>${pedido.total.toFixed(2)}</span>
+                        <span className="break-words">${pedido.total.toFixed(2)}</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -599,18 +680,20 @@ const PedidoFormAdvanced: React.FC<PedidoFormAdvancedProps> = ({
         </Card>
 
         {/* Botones de acción */}
-        <div className="flex justify-end gap-4">
+        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
           <Button
             type="button"
             variant="outline"
             onClick={onCancel}
             disabled={isSubmitting}
+            className="w-full sm:w-auto order-2 sm:order-1"
           >
             Cancelar
           </Button>
           <Button
             type="submit"
             disabled={isSubmitting || pedido.detalles.length === 0 || stockValidations.some(s => !s.esValido)}
+            className="w-full sm:w-auto order-1 sm:order-2"
           >
             {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             {isEditing ? 'Actualizar Pedido' : 'Crear Pedido'}

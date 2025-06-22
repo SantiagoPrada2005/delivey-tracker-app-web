@@ -157,36 +157,66 @@ export default function PedidosTable({ pedidos, onView, onEdit, onDelete }: Pedi
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[100px]">ID</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Fecha/Hora</TableHead>
-                <TableHead>Dirección</TableHead>
-                <TableHead>Repartidor</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Tiempo Entrega</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="w-[70px]"></TableHead>
+                <TableHead className="w-[80px] sm:w-[100px]">ID</TableHead>
+                <TableHead className="min-w-[120px]">Cliente</TableHead>
+                <TableHead className="hidden md:table-cell min-w-[100px]">Fecha/Hora</TableHead>
+                <TableHead className="min-w-[150px]">Dirección</TableHead>
+                <TableHead className="hidden lg:table-cell min-w-[100px]">Repartidor</TableHead>
+                <TableHead className="min-w-[80px]">Estado</TableHead>
+                <TableHead className="hidden xl:table-cell min-w-[100px]">Tiempo Entrega</TableHead>
+                <TableHead className="text-right min-w-[80px]">Total</TableHead>
+                <TableHead className="w-[50px] sm:w-[70px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {pedidos.map((pedido) => (
                 <TableRow key={pedido.id}>
-                  <TableCell className="font-medium">#{pedido.id}</TableCell>
-                  <TableCell>
-                    {pedido.cliente ? `${pedido.cliente.nombre} ${pedido.cliente.apellido}` : 'Cliente no encontrado'}
+                  <TableCell className="font-medium text-xs sm:text-sm">#{pedido.id}</TableCell>
+                  <TableCell className="text-xs sm:text-sm">
+                    <div className="max-w-[120px] truncate">
+                      {pedido.cliente ? `${pedido.cliente.nombre} ${pedido.cliente.apellido}` : 'Cliente no encontrado'}
+                    </div>
+                    <div className="md:hidden text-xs text-muted-foreground mt-1">
+                      {formatearFechaBogota(pedido.createdAt)}
+                    </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell text-xs sm:text-sm">
                     {formatearFechaBogota(pedido.createdAt)}
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate">{pedido.direccionEntrega}</TableCell>
-                  <TableCell>
-                    {pedido.asignaciones && pedido.asignaciones.length > 0 
-                      ? `${pedido.asignaciones[0].repartidor?.nombre || ''} ${pedido.asignaciones[0].repartidor?.apellido || ''}`.trim() || 'Sin asignar'
-                      : 'Sin asignar'
-                    }
+                  <TableCell className="text-xs sm:text-sm">
+                    <div className="max-w-[150px] sm:max-w-[200px] truncate">{pedido.direccionEntrega}</div>
+                    <div className="lg:hidden text-xs text-muted-foreground mt-1">
+                      {pedido.asignaciones && pedido.asignaciones.length > 0 
+                        ? `${pedido.asignaciones[0].repartidor?.nombre || ''} ${pedido.asignaciones[0].repartidor?.apellido || ''}`.trim() || 'Sin asignar'
+                        : 'Sin asignar'
+                      }
+                    </div>
                   </TableCell>
-                  <TableCell>{getEstadoBadge(pedido.estado)}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-xs sm:text-sm">
+                    <div className="max-w-[100px] truncate">
+                      {pedido.asignaciones && pedido.asignaciones.length > 0 
+                        ? `${pedido.asignaciones[0].repartidor?.nombre || ''} ${pedido.asignaciones[0].repartidor?.apellido || ''}`.trim() || 'Sin asignar'
+                        : 'Sin asignar'
+                      }
+                    </div>
+                  </TableCell>
                   <TableCell>
+                    {getEstadoBadge(pedido.estado)}
+                    <div className="xl:hidden text-xs text-muted-foreground mt-1">
+                      {pedido.estado === 'entregado' && pedido.fechaEntrega ? (
+                        <span className="text-green-600 font-medium">
+                          {formatearTiempo(calcularTiempoEntrega(pedido.createdAt, pedido.fechaEntrega))}
+                        </span>
+                      ) : pedido.fechaEntrega ? (
+                        <span className="text-orange-600">
+                          Est: {formatearTiempo(calcularTiempoEntrega(pedido.createdAt, pedido.fechaEntrega))}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell text-xs sm:text-sm">
                     {pedido.estado === 'entregado' && pedido.fechaEntrega ? (
                       <span className="text-green-600 font-medium">
                         {formatearTiempo(calcularTiempoEntrega(pedido.createdAt, pedido.fechaEntrega))}
@@ -199,7 +229,7 @@ export default function PedidosTable({ pedidos, onView, onEdit, onDelete }: Pedi
                       <span className="text-muted-foreground">-</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-right font-medium">
+                  <TableCell className="text-right font-medium text-xs sm:text-sm">
                     ${pedido.total.toLocaleString('es-CO')}
                   </TableCell>
                   <TableCell>

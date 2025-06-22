@@ -170,54 +170,57 @@ export default function PedidosPage() {
 
   return (
     <DashboardLayout currentPage="Pedidos" breadcrumbItems={breadcrumbItems}>
-          <PedidoActions onCreateClick={handleCreateClick} />
+      <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+        <PedidoActions onCreateClick={handleCreateClick} />
+        
+        <PedidoStats 
+          pedidos={pedidos}
+          horaActual={currentTime.toLocaleTimeString('es-CO')}
+          stats={stats}
+          currentTime={currentTime}
+        />
+        
+        <PedidoFilters
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          filterEstado={statusFilter}
+          setFilterEstado={setStatusFilter}
+        />
+        
+        <PedidosTable
+          pedidos={filteredPedidos}
+          onView={handleView}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      </div>
           
-          <PedidoStats 
-            pedidos={pedidos}
-            horaActual={currentTime.toLocaleTimeString('es-CO')}
-            stats={stats}
-            currentTime={currentTime}
+      
+      <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto sm:max-w-2xl md:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">
+              {editingPedidoId ? 'Editar Pedido' : 'Crear Nuevo Pedido'}
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              {editingPedidoId 
+                ? 'Modifica los detalles del pedido existente.' 
+                : 'Complete la información para crear un nuevo pedido.'}
+            </DialogDescription>
+          </DialogHeader>
+          <PedidoFormAdvanced
+            pedidoId={editingPedidoId || undefined}
+            onSuccess={handlePedidoSuccess}
+            onCancel={handlePedidoCancel}
           />
-          
-          <PedidoFilters
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            filterEstado={statusFilter}
-            setFilterEstado={setStatusFilter}
-          />
-          
-          <PedidosTable
-            pedidos={filteredPedidos}
-            onView={handleView}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-          
-          <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto sm:max-w-2xl md:max-w-4xl">
-              <DialogHeader>
-                <DialogTitle className="text-lg sm:text-xl">
-                  {editingPedidoId ? 'Editar Pedido' : 'Crear Nuevo Pedido'}
-                </DialogTitle>
-                <DialogDescription className="text-sm">
-                  {editingPedidoId 
-                    ? 'Modifica los detalles del pedido existente.' 
-                    : 'Complete la información para crear un nuevo pedido.'}
-                </DialogDescription>
-              </DialogHeader>
-              <PedidoFormAdvanced
-                pedidoId={editingPedidoId || undefined}
-                onSuccess={handlePedidoSuccess}
-                onCancel={handlePedidoCancel}
-              />
-            </DialogContent>
-          </Dialog>
-          
-          <PedidoViewDialog
-            isOpen={isViewDialogOpen}
-            onOpenChange={setIsViewDialogOpen}
-            pedido={selectedPedido}
-          />
+        </DialogContent>
+      </Dialog>
+      
+      <PedidoViewDialog
+        isOpen={isViewDialogOpen}
+        onOpenChange={setIsViewDialogOpen}
+        pedido={selectedPedido}
+      />
     </DashboardLayout>
   );
 }
