@@ -36,16 +36,16 @@ function PedidoCardMobile({ pedido, onView, onEdit, onDelete }: { pedido: Pedido
     : 'Sin asignar';
 
   return (
-    <Card className="mb-4">
-      <CardContent className="p-4">
+    <Card className="mb-3 shadow-sm">
+      <CardContent className="p-3">
         <div className="flex justify-between items-start mb-3">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2">
               <span className="font-semibold text-sm">#{pedido.id}</span>
               {getEstadoBadge(pedido.estado)}
             </div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground mb-1">
-              <User className="h-3 w-3" />
+              <User className="h-3 w-3 flex-shrink-0" />
               <span className="truncate">{clienteNombre}</span>
             </div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground mb-1">
@@ -82,23 +82,25 @@ function PedidoCardMobile({ pedido, onView, onEdit, onDelete }: { pedido: Pedido
           </DropdownMenu>
         </div>
         
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <div className="flex items-center gap-1 text-muted-foreground mb-1">
-              <Clock className="h-3 w-3" />
-              <span>Fecha</span>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                <Clock className="h-3 w-3 flex-shrink-0" />
+                <span className="text-xs">Fecha</span>
+              </div>
+              <span className="text-xs font-medium">{formatearFechaBogota(pedido.createdAt)}</span>
             </div>
-            <span className="text-xs">{formatearFechaBogota(pedido.createdAt)}</span>
+            <div>
+              <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                <DollarSign className="h-3 w-3 flex-shrink-0" />
+                <span className="text-xs">Total</span>
+              </div>
+              <span className="font-semibold text-sm">${pedido.total.toLocaleString('es-CO')}</span>
+            </div>
           </div>
           <div>
-            <div className="flex items-center gap-1 text-muted-foreground mb-1">
-              <DollarSign className="h-3 w-3" />
-              <span>Total</span>
-            </div>
-            <span className="font-semibold">${pedido.total.toLocaleString('es-CO')}</span>
-          </div>
-          <div className="col-span-2">
-            <div className="text-muted-foreground mb-1">Repartidor</div>
+            <div className="text-muted-foreground mb-1 text-xs">Repartidor</div>
             <span className="text-sm">{repartidorNombre}</span>
           </div>
         </div>
@@ -112,19 +114,23 @@ export default function PedidosTable({ pedidos, onView, onEdit, onDelete }: Pedi
 
   if (isMobile) {
     return (
-      <div>
-        <div className="mb-4">
+      <div className="space-y-4">
+        <div className="px-1">
           <h3 className="text-lg font-semibold">Pedidos Recientes</h3>
           <p className="text-sm text-muted-foreground">Gestiona todos los pedidos desde aquí</p>
         </div>
         {pedidos.length === 0 ? (
-          <Card>
+          <Card className="mx-1">
             <CardContent className="text-center py-8 text-muted-foreground">
-              No se encontraron pedidos
+              <div className="space-y-2">
+                <div className="text-4xl">📦</div>
+                <p className="text-sm">No se encontraron pedidos</p>
+                <p className="text-xs">Los pedidos aparecerán aquí cuando se creen</p>
+              </div>
             </CardContent>
           </Card>
         ) : (
-          <div>
+          <div className="px-1">
             {pedidos.map((pedido) => (
               <PedidoCardMobile 
                 key={pedido.id} 

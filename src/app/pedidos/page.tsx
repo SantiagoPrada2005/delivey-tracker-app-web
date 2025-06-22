@@ -194,12 +194,12 @@ export default function PedidosPage() {
           />
           
           <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto sm:max-w-2xl md:max-w-4xl">
               <DialogHeader>
-                <DialogTitle>
+                <DialogTitle className="text-lg sm:text-xl">
                   {editingPedidoId ? 'Editar Pedido' : 'Crear Nuevo Pedido'}
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-sm">
                   {editingPedidoId 
                     ? 'Modifica los detalles del pedido existente.' 
                     : 'Complete la información para crear un nuevo pedido.'}

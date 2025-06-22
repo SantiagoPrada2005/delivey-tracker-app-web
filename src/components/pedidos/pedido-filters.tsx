@@ -1,3 +1,4 @@
+import React from 'react';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
@@ -16,21 +17,21 @@ export default function PedidoFilters({
   setFilterEstado
 }: PedidoFiltersProps) {
   return (
-    <div className="flex flex-col sm:flex-row gap-4 mb-6">
+    <div className="flex flex-col sm:flex-row gap-3 mb-4 px-1 sm:px-0">
       {/* Buscador */}
       <div className="relative flex-1">
-        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar por cliente, dirección o ID..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-8"
+          className="pl-9 text-sm h-10"
         />
       </div>
       
       {/* Filtro por estado */}
       <Select value={filterEstado} onValueChange={setFilterEstado}>
-        <SelectTrigger className="w-full sm:w-[180px]">
+        <SelectTrigger className="w-full sm:w-[200px] text-sm h-10">
           <SelectValue placeholder="Filtrar por estado" />
         </SelectTrigger>
         <SelectContent>

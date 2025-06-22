@@ -99,18 +99,18 @@ export default function PedidoForm({
           Nuevo Pedido
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto sm:max-w-lg md:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg sm:text-xl">{title}</DialogTitle>
+          <DialogDescription className="text-sm">
             Complete la información del pedido y sus detalles.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="cliente">Cliente</Label>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <Label htmlFor="cliente" className="text-sm font-medium">Cliente</Label>
                 <ClienteForm
                   onCreateCliente={onCreateCliente}
                   fetchClientes={fetchClientes}
@@ -130,22 +130,25 @@ export default function PedidoForm({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="fechaEntrega">Fecha de Entrega</Label>
+              <Label htmlFor="fechaEntrega" className="text-sm font-medium">Fecha de Entrega</Label>
               <Input
                 id="fechaEntrega"
                 type="datetime-local"
                 value={formData.fechaEntrega}
                 onChange={(e) => setFormData(prev => ({ ...prev, fechaEntrega: e.target.value }))}
+                className="text-sm"
               />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="direccion">Dirección de Entrega</Label>
+            <Label htmlFor="direccion" className="text-sm font-medium">Dirección de Entrega</Label>
             <Textarea
               id="direccion"
               placeholder={clienteSeleccionado?.direccion || "Ingrese la dirección completa"}
               value={formData.direccionEntrega}
               onChange={(e) => setFormData(prev => ({ ...prev, direccionEntrega: e.target.value }))}
+              className="min-h-[80px] text-sm resize-none"
+              rows={3}
             />
             {clienteSeleccionado && (
               <div className="text-xs text-muted-foreground space-y-1">
@@ -159,17 +162,17 @@ export default function PedidoForm({
             )}
           </div>
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Detalles del Pedido</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addDetalle}>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <Label className="text-sm font-medium">Detalles del Pedido</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addDetalle} className="w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-1" />
                 Agregar Producto
               </Button>
             </div>
             {formData.detalles.map((detalle, index) => (
-              <div key={index} className="grid grid-cols-4 gap-2 items-end">
-                <div className="space-y-2">
-                  <Label>Producto</Label>
+              <div key={index} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-3 border rounded-lg bg-muted/30">
+                <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+                  <Label className="text-sm font-medium">Producto</Label>
                   <Select 
                     value={detalle.productoId} 
                     onValueChange={(value) => {
@@ -180,7 +183,7 @@ export default function PedidoForm({
                       }
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="text-sm">
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
                     <SelectContent>
@@ -193,46 +196,52 @@ export default function PedidoForm({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Cantidad</Label>
+                  <Label className="text-sm font-medium">Cantidad</Label>
                   <Input
                     type="number"
                     min="1"
                     value={detalle.cantidad}
+                    className="text-sm"
                     onChange={(e) => updateDetalle(index, 'cantidad', parseInt(e.target.value) || 1)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Precio Unit.</Label>
+                  <Label className="text-sm font-medium">Precio Unit.</Label>
                   <Input
                     type="number"
                     step="0.01"
                     value={detalle.precioUnitario}
                     onChange={(e) => updateDetalle(index, 'precioUnitario', parseFloat(e.target.value) || 0)}
+                    className="text-sm"
                   />
                 </div>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => removeDetalle(index)}
-                  disabled={formData.detalles.length === 1}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                <div className="flex items-end">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => removeDetalle(index)}
+                    disabled={formData.detalles.length === 1}
+                    className="w-full sm:w-auto"
+                  >
+                    <Trash2 className="w-4 h-4 sm:mr-0 mr-2" />
+                    <span className="sm:hidden">Eliminar</span>
+                  </Button>
+                </div>
               </div>
             ))}
-            <div className="text-right">
+            <div className="text-center sm:text-right bg-muted/50 p-3 rounded-lg">
               <p className="text-lg font-semibold">
-                Total: ${formData.detalles.reduce((sum, detalle) => sum + (detalle.cantidad * detalle.precioUnitario), 0).toFixed(2)}
+                Total: ${formData.detalles.reduce((sum, detalle) => sum + (detalle.cantidad * detalle.precioUnitario), 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Cancelar
           </Button>
-          <Button onClick={onSubmit}>
+          <Button onClick={onSubmit} className="w-full sm:w-auto">
             {submitLabel}
           </Button>
         </DialogFooter>
