@@ -279,7 +279,7 @@ const PedidoFormAdvanced: React.FC<PedidoFormAdvancedProps> = ({
                   </SelectContent>
                 </Select>
                 {getFieldError('clienteId') && (
-                  <p className="text-sm text-red-500">{getFieldError('clienteId')?.message}</p>
+                  <p className="text-sm text-destructive">{getFieldError('clienteId')?.message}</p>
                 )}
               </div>
 
@@ -316,7 +316,7 @@ const PedidoFormAdvanced: React.FC<PedidoFormAdvancedProps> = ({
                 className={getFieldError('direccionEntrega') ? 'border-red-500' : ''}
               />
               {getFieldError('direccionEntrega') && (
-                <p className="text-sm text-red-500">{getFieldError('direccionEntrega')?.message}</p>
+                <p className="text-sm text-destructive">{getFieldError('direccionEntrega')?.message}</p>
               )}
             </div>
 
@@ -377,7 +377,7 @@ const PedidoFormAdvanced: React.FC<PedidoFormAdvancedProps> = ({
                   </SelectContent>
                 </Select>
                 {getFieldError('repartidorId') && (
-                  <p className="text-sm text-red-500">{getFieldError('repartidorId')?.message}</p>
+                  <p className="text-sm text-destructive">{getFieldError('repartidorId')?.message}</p>
                 )}
               </div>
             </div>
@@ -397,7 +397,7 @@ const PedidoFormAdvanced: React.FC<PedidoFormAdvancedProps> = ({
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Formulario para agregar productos */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg bg-gray-50">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg bg-muted/50">
               <div className="space-y-2">
                 <Label htmlFor="producto">Producto</Label>
                 <Select
@@ -488,7 +488,7 @@ const PedidoFormAdvanced: React.FC<PedidoFormAdvancedProps> = ({
                             <div>
                               <p className="font-medium">{producto?.nombre || 'Producto no encontrado'}</p>
                               {detalle.notaProducto && (
-                                <p className="text-sm text-gray-500">{detalle.notaProducto}</p>
+                                <p className="text-sm text-muted-foreground">{detalle.notaProducto}</p>
                               )}
                             </div>
                           </TableCell>
@@ -525,7 +525,7 @@ const PedidoFormAdvanced: React.FC<PedidoFormAdvancedProps> = ({
                                 {stockValidation.stockDisponible}
                               </Badge>
                             ) : (
-                              <span className="text-gray-500">-</span>
+                              <span className="text-muted-foreground">-</span>
                             )}
                           </TableCell>
                           <TableCell className="text-center">
@@ -582,10 +582,10 @@ const PedidoFormAdvanced: React.FC<PedidoFormAdvancedProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No hay productos agregados al pedido</p>
-                <p className="text-sm">Usa el formulario de arriba para agregar productos</p>
+                <p className="text-sm text-muted-foreground/80">Usa el formulario de arriba para agregar productos</p>
               </div>
             )}
 

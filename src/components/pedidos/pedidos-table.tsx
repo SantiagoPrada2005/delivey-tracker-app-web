@@ -77,7 +77,7 @@ export default function PedidosTable({ pedidos, onView, onEdit, onDelete }: Pedi
                       Est: {formatearTiempo(calcularTiempoEntrega(pedido.createdAt, pedido.fechaEntrega))}
                     </span>
                   ) : (
-                    <span className="text-gray-400">-</span>
+                    <span className="text-muted-foreground">-</span>
                   )}
                 </TableCell>
                 <TableCell className="text-right font-medium">
@@ -104,7 +104,7 @@ export default function PedidosTable({ pedidos, onView, onEdit, onDelete }: Pedi
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         onClick={() => onDelete(pedido)}
-                        className="text-red-600"
+                        className="text-destructive"
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Eliminar

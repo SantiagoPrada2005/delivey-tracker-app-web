@@ -4,17 +4,6 @@ import { useState, useEffect } from "react";
 import { usePedidos } from "@/hooks/usePedidos";
 import { useClientes } from "@/hooks/useClientes";
 import { useProductos } from "@/hooks/useProductos";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { useToast } from "@/hooks/use-toast";
 import {
   PedidoStats,
@@ -26,6 +15,7 @@ import {
 } from "@/components/pedidos";
 import PedidoFormAdvanced from "@/components/pedidos/pedido-form-advanced";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { DashboardLayout } from "@/components/dashboard-layout";
 
 export default function PedidosPage() {
   const { toast } = useToast();
@@ -159,44 +149,27 @@ export default function PedidosPage() {
 
   // Obtener estadísticas usando el hook
   const stats = getEstadisticasPedidos();
+  
+  const breadcrumbItems = [
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Pedidos", href: "/pedidos" }
+  ];
 
   if (pedidosLoading || clientesLoading || productosLoading) {
     return (
-    <SidebarProvider>
-      <SidebarInset>
-          <div className="flex h-screen items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-              <p className="mt-2 text-sm text-gray-600">Cargando pedidos...</p>
-            </div>
+      <DashboardLayout currentPage="Pedidos" breadcrumbItems={breadcrumbItems}>
+        <div className="flex h-screen items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto"></div>
+            <p className="mt-2 text-sm text-muted-foreground">Cargando pedidos...</p>
           </div>
-        </SidebarInset>
-      </SidebarProvider>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <SidebarProvider>
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Pedidos</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </header>
-        
-        <main className="flex-1 space-y-4 p-4 md:p-6 pt-6">
+    <DashboardLayout currentPage="Pedidos" breadcrumbItems={breadcrumbItems}>
           <PedidoActions onCreateClick={handleCreateClick} />
           
           <PedidoStats 
@@ -245,8 +218,6 @@ export default function PedidosPage() {
             onOpenChange={setIsViewDialogOpen}
             pedido={selectedPedido}
           />
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+    </DashboardLayout>
   );
 }

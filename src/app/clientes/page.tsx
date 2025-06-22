@@ -70,27 +70,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-
-// Importar los componentes del sidebar
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarGroup, 
-  SidebarGroupContent, 
-  SidebarGroupLabel, 
-  SidebarMenu, 
-  SidebarMenuButton, 
-  SidebarMenuItem, 
-  SidebarProvider,
-  SidebarInset,
-  SidebarTrigger,
-  SidebarHeader,
-  SidebarFooter
-} from "@/components/ui/sidebar"
-import { Home, Package, ShoppingBag, Truck, Settings, Bell } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { ThemeSwitcher } from "@/components/theme-switcher"
-import { UserAuthNav } from "@/components/auth/user-auth-nav"
+import { DashboardLayout } from "@/components/dashboard-layout"
 import { OrganizationSelector } from "@/components/organization-selector"
 import { useOrganization } from "@/hooks/useOrganization"
 import { useClientes } from "@/hooks/useClientes"
@@ -528,104 +508,13 @@ export default function ClientesPage() {
   const clientesConEmail = data.filter(cliente => cliente.email).length
   const clientesSinEmail = data.filter(cliente => !cliente.email).length
 
-  // Definir los elementos del menú principal
-  const mainMenuItems = [
-    { title: "Dashboard", url: "/", icon: Home },
-    { title: "Pedidos", url: "/pedidos", icon: Package, badge: 25 },
-    { title: "Clientes", url: "/clientes", icon: Users },
-    { title: "Productos", url: "/productos", icon: ShoppingBag },
-    { title: "Repartidores", url: "/repartidores", icon: Truck },
-    { title: "Configuración", url: "/configuracion", icon: Settings },
-  ];
-
-  // Definir los elementos del menú de notificaciones
-  const notificationItems = [
-    { title: "Nuevos pedidos", url: "/notificaciones/pedidos", count: 5 },
-    { title: "Alertas de stock", url: "/notificaciones/stock", count: 3 },
-    { title: "Mensajes", url: "/notificaciones/mensajes", count: 2 },
+  const breadcrumbItems = [
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Clientes", href: "/clientes" }
   ];
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader className="border-b px-6 py-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Package className="h-4 w-4" />
-            </div>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-semibold">Delivery Tracker</span>
-              <span className="truncate text-xs text-muted-foreground">Gestión de entregas</span>
-            </div>
-          </div>
-        </SidebarHeader>
-        
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel>Menú Principal</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {mainMenuItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <a href={item.url} className="flex items-center gap-2">
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                        {item.badge && (
-                          <Badge variant="secondary" className="ml-auto">
-                            {item.badge}
-                          </Badge>
-                        )}
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-          
-          <SidebarGroup>
-            <SidebarGroupLabel>Notificaciones</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {notificationItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <a href={item.url} className="flex items-center gap-2">
-                        <Bell className="h-4 w-4" />
-                        <span>{item.title}</span>
-                        {item.count > 0 && (
-                          <Badge variant="destructive" className="ml-auto">
-                            {item.count}
-                          </Badge>
-                        )}
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-        
-        <SidebarFooter className="border-t p-4">
-          <div className="flex items-center justify-between">
-            <UserAuthNav />
-            <ThemeSwitcher />
-          </div>
-        </SidebarFooter>
-      </Sidebar>
-      
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold">Clientes</h1>
-          </div>
-        </header>
-        
-        {/* Contenido de la página */}
-        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+    <DashboardLayout currentPage="Clientes" breadcrumbItems={breadcrumbItems}>
           <div className="flex items-center justify-between space-y-2">
             <div>
               <h2 className="text-2xl font-bold tracking-tight">Clientes</h2>
@@ -867,9 +756,6 @@ export default function ClientesPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
-      </SidebarInset>
-      
       {/* Dialog para editar cliente */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
@@ -925,6 +811,6 @@ export default function ClientesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </SidebarProvider>
+    </DashboardLayout>
   )
 }
