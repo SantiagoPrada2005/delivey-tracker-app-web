@@ -358,14 +358,14 @@ const PedidoFormAdvanced: React.FC<PedidoFormAdvancedProps> = ({
               <div className="space-y-2">
                 <Label htmlFor="repartidor">Repartidor</Label>
                 <Select
-                  value={pedido.repartidorId?.toString() || ''}
-                  onValueChange={(value) => handlePedidoChange('repartidorId', value ? parseInt(value) : undefined)}
+                  value={pedido.repartidorId?.toString() || 'unassigned'}
+                  onValueChange={(value) => handlePedidoChange('repartidorId', value === 'unassigned' ? undefined : parseInt(value))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar repartidor (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin asignar</SelectItem>
+                    <SelectItem value="unassigned">Sin asignar</SelectItem>
                     {repartidores
                       .filter(r => r.disponible)
                       .map((repartidor) => (

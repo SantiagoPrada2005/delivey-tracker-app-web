@@ -25,7 +25,7 @@ import {
   Pedido,
 } from "@/components/pedidos";
 import PedidoFormAdvanced from "@/components/pedidos/pedido-form-advanced";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function PedidosPage() {
   const { toast } = useToast();
@@ -226,6 +226,11 @@ export default function PedidosPage() {
                 <DialogTitle>
                   {editingPedidoId ? 'Editar Pedido' : 'Crear Nuevo Pedido'}
                 </DialogTitle>
+                <DialogDescription>
+                  {editingPedidoId 
+                    ? 'Modifica los detalles del pedido existente.' 
+                    : 'Complete la información para crear un nuevo pedido.'}
+                </DialogDescription>
               </DialogHeader>
               <PedidoFormAdvanced
                 pedidoId={editingPedidoId || undefined}
