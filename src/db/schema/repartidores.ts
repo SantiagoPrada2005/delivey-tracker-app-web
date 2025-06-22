@@ -1,5 +1,5 @@
-import { mysqlTable, serial, int, varchar, boolean, timestamp } from 'drizzle-orm/mysql-core';
 import { relations } from 'drizzle-orm';
+import { mysqlTable, serial, int, varchar, boolean, timestamp } from 'drizzle-orm/mysql-core';
 import { asignacionesPedido } from './asignacionesPedido';
 import { organizations } from './organizations';
 import { users } from './users';

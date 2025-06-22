@@ -24,5 +24,7 @@ export const pedidosRelations = relations(pedidos, ({ one, many }) => ({
     references: [clientes.id],
   }),
   detalles: many(detallesPedido),
-  asignaciones: many(asignacionesPedido),
+  asignaciones: many(asignacionesPedido, {
+    relationName: 'pedidoAsignaciones'
+  }),
 }));

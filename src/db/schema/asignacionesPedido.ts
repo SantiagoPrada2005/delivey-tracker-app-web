@@ -1,5 +1,5 @@
-import { mysqlTable, serial, int, timestamp, mysqlEnum } from 'drizzle-orm/mysql-core';
 import { relations } from 'drizzle-orm';
+import { mysqlTable, serial, int, timestamp, mysqlEnum } from 'drizzle-orm/mysql-core';
 import { pedidos } from './pedidos';
 import { repartidores } from './repartidores';
 
@@ -17,9 +17,11 @@ export const asignacionesPedidoRelations = relations(asignacionesPedido, ({ one 
   pedido: one(pedidos, {
     fields: [asignacionesPedido.pedidoId],
     references: [pedidos.id],
+    relationName: 'pedidoAsignaciones'
   }),
   repartidor: one(repartidores, {
     fields: [asignacionesPedido.repartidorId],
     references: [repartidores.id],
+    relationName: 'repartidorAsignaciones'
   }),
 }));
