@@ -79,6 +79,55 @@
   --sidebar-ring: oklch(0.70 0.10 260);
 }
 
+/* Mejoras para dispositivos móviles */
+@media (max-width: 768px) {
+  :root {
+    --radius: 0.5rem; /* Radio más pequeño en móvil */
+  }
+}
+
+/* Utilidades responsive adicionales */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-tap {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mejoras de accesibilidad táctil */
+@media (pointer: coarse) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Optimizaciones para pantallas pequeñas */
+@media (max-width: 640px) {
+  .text-responsive {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+  
+  .heading-responsive {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+}
+
+/* Animaciones suaves para transiciones móviles */
+.mobile-transition {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Mejoras para el sidebar en móvil */
+@media (max-width: 768px) {
+  [data-sidebar="sidebar"] {
+    --sidebar-width-mobile: 280px;
+  }
+}
+
 .dark {
   /* Tema oscuro con colores suaves */
   --background: oklch(0.15 0.03 260);

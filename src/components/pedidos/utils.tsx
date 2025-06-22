@@ -21,9 +21,19 @@ export function getEstadoBadge(estado: string) {
 }
 
 // Función para calcular el tiempo de entrega
-export function calcularTiempoEntrega(fechaCreacion: Date, fechaEntrega?: Date): number {
+export function calcularTiempoEntrega(fechaCreacion: Date | string, fechaEntrega?: Date | string): number {
   if (!fechaEntrega) return 0;
-  const diff = fechaEntrega.getTime() - fechaCreacion.getTime();
+  
+  // Convertir a objetos Date si son strings
+  const fechaCreacionDate = typeof fechaCreacion === 'string' ? new Date(fechaCreacion) : fechaCreacion;
+  const fechaEntregaDate = typeof fechaEntrega === 'string' ? new Date(fechaEntrega) : fechaEntrega;
+  
+  // Verificar que las fechas sean válidas
+  if (isNaN(fechaCreacionDate.getTime()) || isNaN(fechaEntregaDate.getTime())) {
+    return 0;
+  }
+  
+  const diff = fechaEntregaDate.getTime() - fechaCreacionDate.getTime();
   return Math.round(diff / (1000 * 60)); // en minutos
 }
 
@@ -40,6 +50,12 @@ export function formatearTiempo(minutos: number): string {
 // Función para formatear fecha y hora en zona horaria de Bogotá
 export function formatearFechaBogota(fecha: Date | string): string {
   const date = new Date(fecha);
+  
+  // Verificar que la fecha sea válida
+  if (isNaN(date.getTime())) {
+    return 'Fecha inválida';
+  }
+  
   return date.toLocaleString('es-CO', {
     timeZone: 'America/Bogota',
     year: 'numeric',

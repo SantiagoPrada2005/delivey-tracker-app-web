@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import {
   Sidebar,
   SidebarContent,
@@ -141,32 +142,38 @@ export function DashboardLayout({ children, currentPage, breadcrumbItems }: Dash
       </Sidebar>
       
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
+        <header className="flex h-14 sm:h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b border-border/40">
+          <div className="flex items-center gap-2 px-3 sm:px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
                 {breadcrumb.map((item, index) => (
-                  <div key={index} className="flex items-center">
-                    {index > 0 && <BreadcrumbSeparator className="hidden md:block" />}
-                    <BreadcrumbItem className={index === 0 ? "hidden md:block" : ""}>
-                      {item.href ? (
-                        <BreadcrumbLink href={item.href}>{item.label}</BreadcrumbLink>
+                  <React.Fragment key={index}>
+                    <BreadcrumbItem className="hidden sm:block">
+                      {index === breadcrumb.length - 1 ? (
+                        <BreadcrumbPage className="text-sm">{item.label}</BreadcrumbPage>
                       ) : (
-                        <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                        <BreadcrumbLink href={item.href} className="text-sm">{item.label}</BreadcrumbLink>
                       )}
                     </BreadcrumbItem>
-                  </div>
+                    {index < breadcrumb.length - 1 && (
+                      <BreadcrumbSeparator className="hidden sm:block" />
+                    )}
+                  </React.Fragment>
                 ))}
               </BreadcrumbList>
             </Breadcrumb>
           </div>
+          <div className="ml-auto flex items-center gap-1 sm:gap-2 px-3 sm:px-4">
+            <ThemeSwitcher />
+            <UserAuthNav />
+          </div>
         </header>
         
-        <main className="flex-1 space-y-4 p-4 md:p-6 pt-6">
+        <div className="flex flex-1 flex-col gap-3 sm:gap-4 p-3 sm:p-4 pt-0">
           {children}
-        </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

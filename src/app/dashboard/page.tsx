@@ -15,29 +15,36 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout currentPage="Dashboard" breadcrumbItems={breadcrumbItems}>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+      {/* Header responsive - stack en móvil */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Última actualización: Hoy, 10:30 AM</span>
+          <span className="text-xs sm:text-sm text-muted-foreground">Última actualización: Hoy, 10:30 AM</span>
         </div>
       </div>
         
-      {/* Métricas con indicadores de tendencia */}
-      <MetricsCards />
+      {/* Métricas con indicadores de tendencia - responsive grid */}
+      <div className="mb-6">
+        <MetricsCards />
+      </div>
 
-      {/* Gráficos */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        {/* Gráfico de pedidos por mes (ocupa 4 columnas) */}
-        <OrderChart />
+      {/* Gráficos - layout mejorado para móvil */}
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-7 mb-6">
+        {/* Gráfico de pedidos por mes - full width en móvil */}
+        <div className="lg:col-span-4">
+          <OrderChart />
+        </div>
         
-        {/* Gráfico de distribución de estados (ocupa 3 columnas) */}
-        <div className="md:col-span-2 lg:col-span-3">
+        {/* Gráfico de distribución de estados */}
+        <div className="lg:col-span-3">
           <StatusChart />
         </div>
       </div>
 
-      {/* Gráfico de ingresos */}
-      <RevenueChart />
+      {/* Gráfico de ingresos - spacing mejorado */}
+      <div className="mb-6">
+        <RevenueChart />
+      </div>
 
       {/* Sección inferior: Actividad reciente */}
       <RecentActivity />

@@ -14,30 +14,51 @@ const data = [
 
 export function OrderChart() {
   return (
-    <Card className="col-span-4">
-      <CardHeader>
-        <CardTitle>Pedidos por Mes</CardTitle>
-        <CardDescription>Distribución de pedidos por estado y mes</CardDescription>
+    <Card className="w-full">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg sm:text-xl">Pedidos por Mes</CardTitle>
+        <CardDescription className="text-sm">Distribución de pedidos por estado y mes</CardDescription>
       </CardHeader>
-      <CardContent className="pl-2">
-        <ResponsiveContainer width="100%" height={350}>
+      <CardContent className="pl-1 sm:pl-2">
+        <ResponsiveContainer width="100%" height={300}>
           <BarChart
             data={data}
             margin={{
               top: 5,
-              right: 30,
-              left: 20,
+              right: 10,
+              left: 5,
               bottom: 5,
             }}
           >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="mes" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="completados" fill="#4ade80" name="Completados" />
-            <Bar dataKey="pendientes" fill="#fbbf24" name="Pendientes" />
-            <Bar dataKey="cancelados" fill="#f87171" name="Cancelados" />
+            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+            <XAxis 
+              dataKey="mes" 
+              fontSize={12}
+              tick={{ fontSize: 11 }}
+              interval={0}
+              angle={-45}
+              textAnchor="end"
+              height={60}
+            />
+            <YAxis 
+              fontSize={12}
+              tick={{ fontSize: 11 }}
+            />
+            <Tooltip 
+              contentStyle={{
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '6px',
+                fontSize: '12px'
+              }}
+            />
+            <Legend 
+              wrapperStyle={{ fontSize: '12px' }}
+              iconType="rect"
+            />
+            <Bar dataKey="completados" fill="#4ade80" name="Completados" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="pendientes" fill="#fbbf24" name="Pendientes" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="cancelados" fill="#f87171" name="Cancelados" radius={[2, 2, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
