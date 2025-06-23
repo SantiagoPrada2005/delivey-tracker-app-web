@@ -217,32 +217,33 @@ export default function RepartidoresPage() {
       ]}
     >
       <main className="flex-1 space-y-4 p-4 sm:p-6 lg:p-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h1 className="text-2xl font-bold">Gestión de Repartidores</h1>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Gestión de Repartidores</h1>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="w-full sm:w-auto min-h-[44px] touch-target">
                   <Plus className="mr-2 h-4 w-4" />
-                  Nuevo Repartidor
+                  <span className="hidden sm:inline">Nuevo Repartidor</span>
+                  <span className="sm:hidden">Nuevo</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Crear Nuevo Repartidor</DialogTitle>
-                  <DialogDescription>
-                    Asigna un usuario de tu organización como repartidor.
-                  </DialogDescription>
-                </DialogHeader>
+              <DialogContent className="w-[calc(100vw-2rem)] max-w-[500px] mx-auto max-h-[calc(100vh-2rem)] overflow-y-auto">
+              <DialogHeader className="space-y-3">
+                <DialogTitle className="text-lg sm:text-xl">Crear Nuevo Repartidor</DialogTitle>
+                <DialogDescription className="text-sm sm:text-base">
+                  Asigna un usuario existente como repartidor y completa su información.
+                </DialogDescription>
+              </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="user-select">Usuario *</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="user-select" className="text-sm font-medium">Usuario *</Label>
                     <Select value={selectedUserId} onValueChange={handleUserSelect}>
-                      <SelectTrigger>
+                      <SelectTrigger className="min-h-[44px]">
                         <SelectValue placeholder="Selecciona un usuario" />
                       </SelectTrigger>
                       <SelectContent>
                         {availableUsers.map((user) => (
-                          <SelectItem key={user.id} value={user.id.toString()}>
+                          <SelectItem key={user.id} value={user.id.toString()} className="min-h-[44px]">
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4" />
                               <div>
@@ -255,52 +256,58 @@ export default function RepartidoresPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="nombre">Nombre *</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="nombre" className="text-sm font-medium">Nombre *</Label>
                       <Input
                         id="nombre"
                         value={formData.nombre}
                         onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))}
                         placeholder="Nombre"
+                        className="min-h-[44px]"
                       />
                     </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="apellido">Apellido *</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="apellido" className="text-sm font-medium">Apellido *</Label>
                       <Input
                         id="apellido"
                         value={formData.apellido}
                         onChange={(e) => setFormData(prev => ({ ...prev, apellido: e.target.value }))}
                         placeholder="Apellido"
+                        className="min-h-[44px]"
                       />
                     </div>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="telefono">Teléfono *</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="telefono" className="text-sm font-medium">Teléfono *</Label>
                     <Input
                       id="telefono"
                       value={formData.telefono}
                       onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
                       placeholder="Número de teléfono"
+                      className="min-h-[44px]"
+                      type="tel"
                     />
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-sm font-medium">Email</Label>
                     <Input
                       id="email"
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                       placeholder="Email (opcional)"
+                      className="min-h-[44px]"
                     />
                   </div>
                 </div>
-                <DialogFooter>
+                <DialogFooter className="flex flex-col-reverse gap-3 sm:flex-row sm:gap-2 pt-4">
                   <Button 
                     type="button" 
                     variant="outline" 
                     onClick={() => setIsCreateDialogOpen(false)}
                     disabled={isCreating}
+                    className="w-full sm:w-auto min-h-[44px] touch-target order-2 sm:order-1"
                   >
                     Cancelar
                   </Button>
@@ -308,6 +315,7 @@ export default function RepartidoresPage() {
                     type="button" 
                     onClick={handleCreateRepartidor}
                     disabled={isCreating || !selectedUserId || !formData.nombre || !formData.apellido || !formData.telefono}
+                    className="w-full sm:w-auto min-h-[44px] touch-target order-1 sm:order-2"
                   >
                     {isCreating ? 'Creando...' : 'Crear Repartidor'}
                   </Button>
@@ -316,111 +324,126 @@ export default function RepartidoresPage() {
             </Dialog>
           </div>
 
-          {/* Tarjetas de estadísticas */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total de Repartidores</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{repartidores.length}</div>
-                <p className="text-xs text-muted-foreground">Repartidores registrados</p>
-              </CardContent>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <Card className="p-3 sm:p-4 lg:p-6">
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Total</p>
+                  <User className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground flex-shrink-0" />
+                </div>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold">{repartidores.length}</p>
+                <p className="text-xs text-muted-foreground hidden sm:block">Registrados</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Repartidores Disponibles</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{repartidores.filter(r => r.disponible).length}</div>
-                <p className="text-xs text-muted-foreground">{repartidores.length > 0 ? Math.round((repartidores.filter(r => r.disponible).length / repartidores.length) * 100) : 0}% del total</p>
-              </CardContent>
+            <Card className="p-3 sm:p-4 lg:p-6">
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Disponibles</p>
+                  <Plus className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
+                </div>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">{repartidores.filter(r => r.disponible).length}</p>
+                <p className="text-xs text-muted-foreground hidden sm:block">Activos</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">No Disponibles</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{repartidores.filter(r => !r.disponible).length}</div>
-                <p className="text-xs text-muted-foreground">Repartidores no disponibles</p>
-              </CardContent>
+            <Card className="p-3 sm:p-4 lg:p-6">
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">No Disponibles</p>
+                  <Phone className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 flex-shrink-0" />
+                </div>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">{repartidores.filter(r => !r.disponible).length}</p>
+                <p className="text-xs text-muted-foreground hidden sm:block">Inactivos</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Registrados Hoy</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
+            <Card className="p-3 sm:p-4 lg:p-6">
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Hoy</p>
+                  <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
+                </div>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">
                   {repartidores.filter(r => {
                     const today = new Date().toISOString().split('T')[0];
                     const createdDate = r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : '';
                     return createdDate === today;
                   }).length}
-                </div>
-                <p className="text-xs text-muted-foreground">Nuevos registros</p>
-              </CardContent>
+                </p>
+                <p className="text-xs text-muted-foreground hidden sm:block">Nuevos</p>
+              </div>
             </Card>
           </div>
 
           {/* Filtros y búsqueda */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
+          <div className="flex flex-col gap-3 sm:gap-4">
+            <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Buscar por nombre, apellido, email o teléfono..."
+                placeholder="Buscar repartidores..."
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div>
+            <div className="overflow-x-auto">
               <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-                <TabsList>
-                  <TabsTrigger value="todos">Todos ({repartidores.length})</TabsTrigger>
-                  <TabsTrigger value="disponibles">Disponibles ({repartidores.filter(r => r.disponible).length})</TabsTrigger>
-                  <TabsTrigger value="no-disponibles">No disponibles ({repartidores.filter(r => !r.disponible).length})</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:grid-cols-none lg:flex">
+                  <TabsTrigger value="todos" className="text-xs sm:text-sm">
+                    <span className="hidden sm:inline">Todos ({repartidores.length})</span>
+                    <span className="sm:hidden">Todos</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="disponibles" className="text-xs sm:text-sm">
+                    <span className="hidden sm:inline">Disponibles ({repartidores.filter(r => r.disponible).length})</span>
+                    <span className="sm:hidden">Disp.</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="no-disponibles" className="text-xs sm:text-sm">
+                    <span className="hidden sm:inline">No disponibles ({repartidores.filter(r => !r.disponible).length})</span>
+                    <span className="sm:hidden">No disp.</span>
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
           </div>
 
           {/* Tabla de repartidores */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Repartidores</CardTitle>
-              <CardDescription>Gestiona tu equipo de repartidores desde aquí</CardDescription>
+          <Card className="overflow-hidden">
+            <CardHeader className="px-3 sm:px-6 py-3 sm:py-6">
+              <CardTitle className="text-base sm:text-lg">Repartidores</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Gestiona tu equipo de repartidores desde aquí</CardDescription>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[100px]">
-                      <div className="flex items-center">
-                        ID
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                      </div>
-                    </TableHead>
-                    <TableHead>Repartidor</TableHead>
-                    <TableHead>Contacto</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Fecha de Registro</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b">
+                      <TableHead className="w-12 sm:w-16 px-2 sm:px-4 py-2 sm:py-3">
+                        <div className="flex items-center text-xs sm:text-sm">
+                          <span className="hidden sm:inline">ID</span>
+                          <span className="sm:hidden">#</span>
+                          <ArrowUpDown className="ml-1 h-3 w-3 sm:h-4 sm:w-4" />
+                        </div>
+                      </TableHead>
+                      <TableHead className="min-w-[140px] px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">Repartidor</TableHead>
+                      <TableHead className="hidden sm:table-cell min-w-[120px] px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">Contacto</TableHead>
+                      <TableHead className="hidden md:table-cell min-w-[160px] px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">Email</TableHead>
+                      <TableHead className="min-w-[80px] px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">Estado</TableHead>
+                      <TableHead className="hidden lg:table-cell min-w-[100px] px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">Fecha</TableHead>
+                      <TableHead className="text-right w-12 sm:w-16 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {filteredRepartidores.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
-                        <div className="text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-6 sm:py-8 px-2 sm:px-4">
+                        <div className="text-muted-foreground text-xs sm:text-sm">
                           {error ? (
-                            <div className="text-red-500">
-                              Error: {error}
+                            <div className="text-red-500 space-y-2">
+                              <div>Error: {error}</div>
                               <Button 
                                 variant="outline" 
                                 size="sm" 
-                                className="ml-2"
+                                className="min-h-[36px] touch-target"
                                 onClick={() => fetchRepartidores()}
                               >
                                 Reintentar
@@ -434,100 +457,113 @@ export default function RepartidoresPage() {
                     </TableRow>
                   ) : (
                     filteredRepartidores.map((repartidor) => (
-                      <TableRow key={repartidor.id}>
-                        <TableCell className="font-medium">#{repartidor.id}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarFallback>{getInitials(repartidor.nombre, repartidor.apellido)}</AvatarFallback>
+                      <TableRow key={repartidor.id} className="border-b hover:bg-muted/50">
+                        <TableCell className="font-medium text-xs sm:text-sm px-2 sm:px-4 py-2 sm:py-3">#{repartidor.id}</TableCell>
+                        <TableCell className="px-2 sm:px-4 py-2 sm:py-3">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <Avatar className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0">
+                              <AvatarFallback className="text-xs sm:text-sm">{getInitials(repartidor.nombre, repartidor.apellido)}</AvatarFallback>
                             </Avatar>
-                            <div>
-                              <div className="font-medium">{getNombreCompleto(repartidor)}</div>
-                              <div className="text-xs text-muted-foreground">
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium text-xs sm:text-sm truncate">{getNombreCompleto(repartidor)}</div>
+                              <div className="text-xs text-muted-foreground space-y-0.5">
+                                <div className="sm:hidden truncate">{repartidor.telefono}</div>
                                 {repartidor.userDisplayName && (
-                                  <div>Usuario: {repartidor.userDisplayName}</div>
+                                  <div className="hidden sm:block truncate">Usuario: {repartidor.userDisplayName}</div>
                                 )}
                                 {repartidor.userRole && (
-                                  <div>Rol: {repartidor.userRole}</div>
+                                  <div className="hidden sm:block truncate">Rol: {repartidor.userRole}</div>
                                 )}
-                                ID: {repartidor.id}
                               </div>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
-                            {repartidor.telefono}
+                        <TableCell className="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3">
+                          <div className="flex items-center text-xs sm:text-sm">
+                            <Phone className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="truncate">{repartidor.telefono}</span>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
+                        <TableCell className="hidden md:table-cell px-2 sm:px-4 py-2 sm:py-3">
+                          <div className="text-xs sm:text-sm space-y-1">
                             {repartidor.email && (
-                              <div>{repartidor.email}</div>
+                              <div className="truncate">{repartidor.email}</div>
                             )}
                             {repartidor.userEmail && repartidor.userEmail !== repartidor.email && (
-                              <div className="text-xs text-muted-foreground">
+                              <div className="text-xs text-muted-foreground truncate">
                                 Usuario: {repartidor.userEmail}
                               </div>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>{getEstadoBadge(repartidor.disponible)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center text-sm">
-                            <Calendar className="mr-1 h-3 w-3 text-muted-foreground" />
-                            {repartidor.createdAt ? new Date(repartidor.createdAt).toLocaleDateString() : 'N/A'}
+                        <TableCell className="px-2 sm:px-4 py-2 sm:py-3">{getEstadoBadge(repartidor.disponible)}</TableCell>
+                        <TableCell className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3">
+                          <div className="flex items-center text-xs sm:text-sm">
+                            <Calendar className="mr-1 h-3 w-3 text-muted-foreground flex-shrink-0" />
+                            <span className="truncate">
+                              {repartidor.createdAt ? new Date(repartidor.createdAt).toLocaleDateString() : 'N/A'}
+                            </span>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-right px-2 sm:px-4 py-2 sm:py-3">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
+                              <Button variant="ghost" className="h-8 w-8 p-0 touch-target">
+                                <span className="sr-only">Abrir menú</span>
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                              <DropdownMenuItem>Ver perfil</DropdownMenuItem>
-                              <DropdownMenuItem>Editar información</DropdownMenuItem>
-                              <DropdownMenuItem>Ver pedidos asignados</DropdownMenuItem>
+                            <DropdownMenuContent align="end" className="w-44 sm:w-48">
+                              <DropdownMenuLabel className="text-xs sm:text-sm px-3 py-2">Acciones</DropdownMenuLabel>
+                              <DropdownMenuItem className="text-xs sm:text-sm min-h-[36px] px-3 py-2 touch-target">
+                                Ver perfil
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-xs sm:text-sm min-h-[36px] px-3 py-2 touch-target">
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-xs sm:text-sm min-h-[36px] px-3 py-2 touch-target">
+                                <span className="hidden sm:inline">Ver pedidos asignados</span>
+                                <span className="sm:hidden">Pedidos</span>
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               {repartidor.disponible ? (
                                 <DropdownMenuItem 
-                                  className="text-amber-600"
+                                  className="text-amber-600 text-xs sm:text-sm min-h-[36px] px-3 py-2 touch-target"
                                   onClick={() => updateRepartidor(repartidor.id.toString(), { disponible: false })}
                                 >
-                                  Marcar como no disponible
+                                  <span className="hidden sm:inline">Marcar como no disponible</span>
+                                  <span className="sm:hidden">No disponible</span>
                                 </DropdownMenuItem>
                               ) : (
                                 <DropdownMenuItem 
-                                  className="text-green-600"
+                                  className="text-green-600 text-xs sm:text-sm min-h-[36px] px-3 py-2 touch-target"
                                   onClick={() => updateRepartidor(repartidor.id.toString(), { disponible: true })}
                                 >
-                                  Marcar como disponible
+                                  <span className="hidden sm:inline">Marcar como disponible</span>
+                                  <span className="sm:hidden">Disponible</span>
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuItem 
-                                className="text-red-600"
+                                className="text-red-600 text-xs sm:text-sm min-h-[36px] px-3 py-2 touch-target"
                                 onClick={() => {
                                   if (confirm('¿Estás seguro de que quieres eliminar este repartidor?')) {
                                     deleteRepartidor(repartidor.id.toString());
                                   }
                                 }}
                               >
-                                Eliminar repartidor
+                                Eliminar
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                       ))
+                     )}
+                   </TableBody>
+                 </Table>
+               </div>
+             </CardContent>
+           </Card>
         </main>
     </DashboardLayout>
   );

@@ -3,6 +3,90 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Variables CSS mejoradas para responsividad */
+:root {
+  /* Breakpoints consistentes con Tailwind CSS */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+  
+  /* Espaciado responsivo */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  
+  /* Tamaños de fuente responsivos */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  
+  /* Z-index hierarchy */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+  
+  /* Sidebar variables mejoradas */
+  --sidebar-width-desktop: 16rem;
+  --sidebar-width-mobile: 18rem;
+  --sidebar-width-icon: 3rem;
+  --sidebar-transition-duration: 300ms;
+  --sidebar-transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Prevenir overflow horizontal global con mejor especificidad */
+html {
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Contenedores principales */
+#__next,
+[data-slot="sidebar-wrapper"] {
+  overflow-x: hidden;
+  max-width: 100vw;
+  min-height: 100vh;
+}
+
+/* Sidebar responsivo mejorado */
+@media (max-width: 767px) {
+  [data-slot="sidebar-container"] {
+    transform: translateX(-100%);
+    transition: transform var(--sidebar-transition-duration) var(--sidebar-transition-easing);
+    will-change: transform;
+  }
+  
+  [data-slot="sidebar-container"][data-state="expanded"] {
+    transform: translateX(0);
+  }
+  
+  /* Optimización para dispositivos táctiles */
+  [data-slot="sidebar-container"] {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -43,9 +127,13 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Extender las variables root existentes */
 :root {
+  /* Radius responsivo */
   --radius: 0.625rem;
-  /* Tema claro con colores suaves */
+  --radius-mobile: 0.5rem;
+  
+  /* Tema claro optimizado con mejor contraste */
   --background: oklch(0.99 0.01 260);
   --foreground: oklch(0.15 0.03 260);
   --card: oklch(1 0 0);
@@ -61,14 +149,19 @@
   --accent: oklch(0.95 0.03 260);
   --accent-foreground: oklch(0.55 0.18 260);
   --destructive: oklch(0.65 0.18 30);
+  --destructive-foreground: oklch(0.99 0.01 260);
   --border: oklch(0.90 0.03 260);
   --input: oklch(0.90 0.03 260);
   --ring: oklch(0.70 0.10 260);
+  
+  /* Colores de gráficos mejorados */
   --chart-1: oklch(0.65 0.22 40);
   --chart-2: oklch(0.60 0.12 185);
   --chart-3: oklch(0.40 0.07 225);
   --chart-4: oklch(0.83 0.19 85);
   --chart-5: oklch(0.77 0.19 70);
+  
+  /* Sidebar con mejor contraste */
   --sidebar: oklch(0.99 0.01 260);
   --sidebar-foreground: oklch(0.15 0.03 260);
   --sidebar-primary: oklch(0.55 0.18 260);
@@ -79,20 +172,45 @@
   --sidebar-ring: oklch(0.70 0.10 260);
 }
 
-/* Mejoras para dispositivos móviles */
-@media (max-width: 768px) {
+/* Mejoras responsivas optimizadas */
+@media (max-width: 767px) {
   :root {
-    --radius: 0.5rem; /* Radio más pequeño en móvil */
+    --radius: var(--radius-mobile);
+    --sidebar-width: var(--sidebar-width-mobile);
+  }
+  
+  /* Optimización de fuentes para móvil */
+  body {
+    font-size: var(--text-base);
+    line-height: 1.6;
   }
 }
 
-/* Utilidades responsive adicionales */
+@media (max-width: 639px) {
+  :root {
+    /* Espaciado más compacto en pantallas muy pequeñas */
+    --spacing-md: 0.75rem;
+    --spacing-lg: 1rem;
+    --spacing-xl: 1.25rem;
+  }
+}
+
+/* Utilidades responsivas mejoradas */
 .mobile-scroll {
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .mobile-tap {
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.mobile-safe-area {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* Mejoras de accesibilidad táctil */
@@ -100,31 +218,70 @@
   .touch-target {
     min-height: 44px;
     min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Aumentar área táctil de botones pequeños */
+  button:not(.touch-target) {
+    min-height: 40px;
+    min-width: 40px;
   }
 }
 
-/* Optimizaciones para pantallas pequeñas */
-@media (max-width: 640px) {
+/* Tipografía responsiva mejorada */
+@media (max-width: 639px) {
   .text-responsive {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
+    font-size: var(--text-sm);
+    line-height: 1.4;
   }
   
   .heading-responsive {
-    font-size: 1.25rem;
-    line-height: 1.75rem;
+    font-size: var(--text-xl);
+    line-height: 1.3;
+    font-weight: 600;
+  }
+  
+  .heading-responsive-lg {
+    font-size: var(--text-2xl);
+    line-height: 1.2;
+    font-weight: 700;
   }
 }
 
-/* Animaciones suaves para transiciones móviles */
+/* Animaciones optimizadas */
 .mobile-transition {
-  transition: all 0.2s ease-in-out;
+  transition: all var(--sidebar-transition-duration) var(--sidebar-transition-easing);
 }
 
-/* Mejoras para el sidebar en móvil */
-@media (max-width: 768px) {
+.reduced-motion {
+  transition: none !important;
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Sidebar móvil optimizado */
+@media (max-width: 767px) {
   [data-sidebar="sidebar"] {
-    --sidebar-width-mobile: 280px;
+    width: var(--sidebar-width-mobile);
+    max-width: calc(100vw - 2rem);
+  }
+  
+  /* Backdrop mejorado */
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    z-index: var(--z-modal-backdrop);
+    transition: opacity var(--sidebar-transition-duration) var(--sidebar-transition-easing);
   }
 }
 
@@ -199,41 +356,131 @@
 }
 
 /* Mejoras específicas para dispositivos móviles */
-@media (max-width: 768px) {
-  /* Mejorar el espaciado en móviles */
+@media (max-width: 767px) {
+  /* Contenedores responsivos */
   .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+    max-width: 100%;
   }
   
-  /* Optimizar el tamaño de los botones para touch */
-  button {
+  /* Optimización de botones para touch */
+  button:not(.btn-sm) {
+    min-height: 44px;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  /* Legibilidad optimizada */
+  body {
+    font-size: 16px; /* Evitar zoom en iOS */
+    line-height: 1.6;
+    text-size-adjust: 100%;
+  }
+  
+  /* Diálogos y modales responsivos */
+  [data-radix-dialog-content],
+  [data-radix-popover-content] {
+    max-width: calc(100vw - var(--spacing-xl));
+    max-height: calc(100vh - var(--spacing-xl));
+    margin: var(--spacing-md);
+  }
+  
+  /* Scroll optimizado */
+  .overflow-y-auto,
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  
+  /* Inputs responsivos */
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* Evitar zoom en iOS */
     min-height: 44px;
   }
   
-  /* Mejorar la legibilidad del texto en pantallas pequeñas */
-  body {
-    font-size: 16px;
-    line-height: 1.5;
-  }
-  
-  /* Optimizar los diálogos para móviles */
-  [data-radix-dialog-content] {
-    max-width: calc(100vw - 2rem);
-    max-height: calc(100vh - 2rem);
-  }
-  
-  /* Mejorar el scroll en elementos con overflow */
-  .overflow-y-auto {
+  /* Tablas responsivas */
+  .table-responsive {
+    overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+  }
+  
+  table {
+    min-width: 600px;
   }
 }
 
+/* Optimizaciones para pantallas muy pequeñas */
+@media (max-width: 479px) {
+  .container {
+    padding-left: var(--spacing-sm);
+    padding-right: var(--spacing-sm);
+  }
+  
+  /* Tipografía más compacta */
+  h1 { font-size: var(--text-2xl); }
+  h2 { font-size: var(--text-xl); }
+  h3 { font-size: var(--text-lg); }
+  h4 { font-size: var(--text-base); }
+}
+
+/* Mejoras para dispositivos con hover */
+@media (hover: hover) and (pointer: fine) {
+  .hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* Base layer optimizado */
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+    outline-color: hsl(var(--ring));
+    outline-offset: 2px;
   }
+  
+  *:focus-visible {
+    @apply outline-2 outline-ring;
+  }
+  
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Mejoras de accesibilidad */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  
+  /* Skip links para accesibilidad */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 4px;
+    z-index: var(--z-toast);
+  }
+  
+  .skip-link:focus {
+    top: 6px;
   }
 }

@@ -41,6 +41,39 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children, currentPage, breadcrumbItems }: DashboardLayoutProps) {
+  // Prevenir scroll del body cuando el sidebar esté abierto en móviles
+  React.useEffect(() => {
+    const handleSidebarToggle = () => {
+      const sidebarContainer = document.querySelector('[data-slot="sidebar-container"]');
+      const isExpanded = sidebarContainer?.getAttribute('data-state') === 'expanded';
+      
+      if (window.innerWidth <= 768) {
+        if (isExpanded) {
+          document.body.style.overflow = 'hidden';
+        } else {
+          document.body.style.overflow = '';
+        }
+      }
+    };
+
+    // Observar cambios en el estado del sidebar
+    const observer = new MutationObserver(handleSidebarToggle);
+    const sidebarContainer = document.querySelector('[data-slot="sidebar-container"]');
+    
+    if (sidebarContainer) {
+      observer.observe(sidebarContainer, {
+        attributes: true,
+        attributeFilter: ['data-state']
+      });
+    }
+
+    // Cleanup
+    return () => {
+      observer.disconnect();
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   // Definir los elementos del menú principal
   const mainMenuItems = [
     { title: "Dashboard", url: "/dashboard", icon: Home },
@@ -68,7 +101,8 @@ export function DashboardLayout({ children, currentPage, breadcrumbItems }: Dash
 
   return (
     <SidebarProvider>
-      <Sidebar>
+      <div className="min-h-screen flex">
+      <Sidebar staticOnDesktop={true}>
         <SidebarHeader className="border-b px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -141,20 +175,20 @@ export function DashboardLayout({ children, currentPage, breadcrumbItems }: Dash
         </SidebarFooter>
       </Sidebar>
       
-      <SidebarInset>
-        <header className="flex h-14 sm:h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b border-border/40">
-          <div className="flex items-center gap-2 px-3 sm:px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
+      <SidebarInset className="min-h-screen overflow-x-hidden flex-1">
+        <header className="sticky top-0 z-[60] flex h-12 sm:h-14 lg:h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 lg:px-4">
+            <SidebarTrigger className="-ml-1 h-8 w-8 sm:h-9 sm:w-9 touch-target" hideOnDesktop={true} />
+            <Separator orientation="vertical" className="mr-1 sm:mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
                 {breadcrumb.map((item, index) => (
                   <React.Fragment key={index}>
                     <BreadcrumbItem className="hidden sm:block">
                       {index === breadcrumb.length - 1 ? (
-                        <BreadcrumbPage className="text-sm">{item.label}</BreadcrumbPage>
+                        <BreadcrumbPage className="text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-none">{item.label}</BreadcrumbPage>
                       ) : (
-                        <BreadcrumbLink href={item.href} className="text-sm">{item.label}</BreadcrumbLink>
+                        <BreadcrumbLink href={item.href} className="text-xs sm:text-sm hover:text-foreground/80 truncate max-w-[100px] sm:max-w-none">{item.label}</BreadcrumbLink>
                       )}
                     </BreadcrumbItem>
                     {index < breadcrumb.length - 1 && (
@@ -162,19 +196,28 @@ export function DashboardLayout({ children, currentPage, breadcrumbItems }: Dash
                     )}
                   </React.Fragment>
                 ))}
+                {/* Breadcrumb móvil simplificado */}
+                <BreadcrumbItem className="sm:hidden">
+                  <BreadcrumbPage className="text-xs font-medium truncate max-w-[100px]">
+                    {breadcrumb[breadcrumb.length - 1]?.label}
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <div className="ml-auto flex items-center gap-1 sm:gap-2 px-3 sm:px-4">
-            <ThemeSwitcher />
+          <div className="ml-auto flex items-center gap-1 sm:gap-2 px-2 sm:px-3 lg:px-4">
+            <div className="hidden sm:block">
+              <ThemeSwitcher />
+            </div>
             <UserAuthNav />
           </div>
         </header>
         
-        <div className="flex flex-1 flex-col gap-3 sm:gap-4 p-3 sm:p-4 pt-0">
+        <div className="flex flex-1 flex-col gap-3 sm:gap-4 lg:gap-6 p-3 sm:p-4 lg:p-6 pt-3 sm:pt-4 lg:pt-6 overflow-x-hidden overflow-y-auto max-w-full">
           {children}
         </div>
       </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

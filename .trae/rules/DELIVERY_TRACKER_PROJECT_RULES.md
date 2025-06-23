@@ -8,17 +8,18 @@
 ## 📖 Índice
 
 1. [🏗️ Arquitectura del Proyecto](#️-arquitectura-del-proyecto)
-2. [🔐 Autenticación y Multi-Tenancy](#-reglas-de-autenticación-y-multi-tenancy)
-3. [🗄️ Base de Datos (MySQL + Drizzle)](#️-reglas-de-base-de-datos-mysql--drizzle)
-4. [🛡️ API Routes](#️-reglas-de-api-routes)
-5. [🎨 Componentes y UI](#-reglas-de-componentes-y-ui)
-6. [📊 Datos y Estados](#-reglas-de-datos-y-estados)
-7. [🚀 Deployment y Performance](#-reglas-de-deployment-y-performance)
-8. [🧪 Testing](#-reglas-de-testing)
-9. [🔧 Herramientas de Desarrollo](#-herramientas-de-desarrollo)
-10. [📋 Checklist de Desarrollo](#-checklist-de-desarrollo)
-11. [🚨 Troubleshooting](#-troubleshooting)
-12. [📚 Recursos y Referencias](#-recursos-y-referencias)
+2. [🎨 Diseño Responsive](#-reglas-de-diseño-responsive)
+3. [🔐 Autenticación y Multi-Tenancy](#-reglas-de-autenticación-y-multi-tenancy)
+4. [🗄️ Base de Datos (MySQL + Drizzle)](#️-reglas-de-base-de-datos-mysql--drizzle)
+5. [🛡️ API Routes](#️-reglas-de-api-routes)
+6. [🎨 Componentes y UI](#-reglas-de-componentes-y-ui)
+7. [📊 Datos y Estados](#-reglas-de-datos-y-estados)
+8. [🚀 Deployment y Performance](#-reglas-de-deployment-y-performance)
+9. [🧪 Testing](#-reglas-de-testing)
+10. [🔧 Herramientas de Desarrollo](#-herramientas-de-desarrollo)
+11. [📋 Checklist de Desarrollo](#-checklist-de-desarrollo)
+12. [🚨 Troubleshooting](#-troubleshooting)
+13. [📚 Recursos y Referencias](#-recursos-y-referencias)
 
 ## 🏗️ Arquitectura del Proyecto
 
@@ -29,10 +30,12 @@ Frontend:
   - Next.js: 15.3.3 (App Router)
   - React: 19.0.0
   - TypeScript: Strict mode
-  - Tailwind CSS: 4.x con PostCSS
-  - Radix UI: Componentes base
+  - Tailwind CSS: 4.x con PostCSS (Mobile-First)
+  - Radix UI: Componentes base accesibles
+  - Shadcn UI: Sistema de componentes
   - Lucide React: Iconografía
   - Next Themes: Gestión de temas
+  - CSS Variables: Design tokens responsive
 
 Backend:
   - API Routes: Next.js App Router
@@ -101,6 +104,138 @@ src/
     ├── database.ts             # Utilidades de DB
     └── utils.ts                # Utilidades generales
 ```
+
+## 🎨 Reglas de Diseño Responsive
+
+> **📋 Referencia Completa**: Ver archivo `DELIVERY_TRACKER_RESPONSIVE_RULES.md` para documentación detallada
+
+### 🏗️ Arquitectura Responsive Obligatoria
+
+```typescript
+// ✅ OBLIGATORIO: Usar hook useIsMobile en todos los componentes adaptativos
+import { useIsMobile } from '@/hooks/use-mobile';
+
+export function MyComponent() {
+  const isMobile = useIsMobile('md'); // Breakpoint por defecto: md (768px)
+  
+  return (
+    <div className={cn(
+      "flex gap-4",
+      isMobile ? "flex-col" : "flex-row"
+    )}>
+      {/* Contenido adaptativo */}
+    </div>
+  );
+}
+```
+
+### 📱 Sistema de Breakpoints Estándar
+
+```css
+/* ✅ OBLIGATORIO: Usar estos breakpoints en todo el proyecto */
+:root {
+  --breakpoint-xs: 475px;   /* Móviles pequeños */
+  --breakpoint-sm: 640px;   /* Móviles grandes */
+  --breakpoint-md: 768px;   /* Tablets portrait */
+  --breakpoint-lg: 1024px;  /* Tablets landscape / Laptops */
+  --breakpoint-xl: 1280px;  /* Desktops */
+  --breakpoint-2xl: 1536px; /* Pantallas grandes */
+}
+```
+
+### 🎯 Patrones de Implementación Obligatorios
+
+#### 1. Mobile-First Approach
+```typescript
+// ✅ CORRECTO: Estilos base para móvil, mejoras para desktop
+<div className="flex flex-col gap-3 sm:flex-row sm:gap-4 lg:gap-6">
+
+// ❌ INCORRECTO: Desktop-first
+<div className="flex flex-row gap-6 lg:gap-4 sm:gap-3 sm:flex-col">
+```
+
+#### 2. Touch Targets Mínimos
+```typescript
+// ✅ OBLIGATORIO: Touch targets de al menos 44px
+<Button className="min-h-[44px] min-w-[44px]">
+  Acción
+</Button>
+```
+
+#### 3. Layouts Adaptativos
+```typescript
+// ✅ OBLIGATORIO: Grids responsivos
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+  {/* Cards o elementos */}
+</div>
+```
+
+#### 4. Componentes Condicionales
+```typescript
+// ✅ OBLIGATORIO: Renderizado condicional para móvil/desktop
+const isMobile = useIsMobile('md');
+
+return (
+  <>
+    {isMobile ? (
+      <MobileLayout>{children}</MobileLayout>
+    ) : (
+      <DesktopLayout>{children}</DesktopLayout>
+    )}
+  </>
+);
+```
+
+### ♿ Accesibilidad Responsive Obligatoria
+
+```typescript
+// ✅ OBLIGATORIO: Focus management en modales
+<DialogContent className={cn(
+  "max-w-lg",
+  isMobile && "w-[95vw] max-h-[90vh] overflow-y-auto"
+)}>
+
+// ✅ OBLIGATORIO: Navegación por teclado
+<Button
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      handleAction();
+    }
+  }}
+>
+```
+
+### 🚫 Antipatrones Prohibidos
+
+```typescript
+// ❌ PROHIBIDO: Hardcodear breakpoints
+if (window.innerWidth < 768) { /* ... */ }
+
+// ❌ PROHIBIDO: Usar px fijos para espaciado
+<div style={{ padding: '20px' }}>
+
+// ❌ PROHIBIDO: Touch targets pequeños
+<button className="h-6 w-6"> // Muy pequeño para touch
+
+// ❌ PROHIBIDO: Overflow horizontal
+<div className="w-[2000px]"> // Causa scroll horizontal
+
+// ❌ PROHIBIDO: Desktop-first
+<div className="hidden lg:block sm:hidden"> // Lógica invertida
+```
+
+### 📋 Checklist Obligatorio por Componente
+
+- [ ] ¿Usa `useIsMobile` cuando necesita adaptación?
+- [ ] ¿Aplica mobile-first approach?
+- [ ] ¿Touch targets son ≥ 44px?
+- [ ] ¿No causa overflow horizontal?
+- [ ] ¿Es accesible con teclado?
+- [ ] ¿Maneja estados de carga?
+- [ ] ¿Usa clases responsive de Tailwind?
+- [ ] ¿Sigue los patrones del design system?
+
+---
 
 ## 🔐 Reglas de Autenticación y Multi-Tenancy
 
